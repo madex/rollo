@@ -13,13 +13,13 @@
  *  - 36 Eingänge entprellen. Jedes Rollo (2 Eingänge) hat eine eigene 
  *    Struct mit Timer und Zustand, GroupId und einen freiparametrierbaren Namen.
  *  - Die 18 Rollo Inputs können Events erzeugen. Up, Down, Stop ..
- *  - Jedes Rollo hat eine GroupId. Mehrere RolloMotoren kšnnen mit 
+ *  - Jedes Rollo hat eine GroupId. Mehrere RolloMotoren k‘nnen mit 
  *    einer GroupId addressiert werden.
  *  - Neben den Eingängen kann die Uhr auch Events erzeugen, die 
  *    jeweils auch mit GroupId verbunden sind.
- *  - Events kšnnnen zu Debug Zwecken dargestellt werden.
+ *  - Events k‘nnnen zu Debug Zwecken dargestellt werden.
  * Events verteilen Groupmanager.
- *  - An der Steuerung kšnnen auch fŸr alle Gruppen Events erzeugt werden.  
+ *  - An der Steuerung k‘nnen auch fŸr alle Gruppen Events erzeugt werden.  
  *  - Die Gruppen beinhalten
  *    - einen parametrierbaren Namen (20 Zeichen)
  *    - eine Ausgangsbitmaske mit alle Ausgänge die angesprochen werden sollen.
@@ -28,7 +28,7 @@
  *    - Der GroupManager wertet entsprechend der Gruppe und der PrioritŠt die
  *      Events aus und leitet sie an die entsprechenden RolloControls weiter.
  *  - Es gibt 10 Rollos. Die restlichen 12 Relaisausgänge könnten andersweitig
- *    z.B. fŸr zeitschaltfunktionen benutzt werden.
+ *    z.B. für zeitschaltfunktionen benutzt werden.
  * Rollos Motoren betreiben. RolloControl
  *  - Die Rolladen sollen 
  *
@@ -42,8 +42,11 @@
 
 // Rollocontrol
 
-// EingŠnge erfassen.
+// Eingaenge erfassen.
 
+#define NUM_INPUTS 32
+#define DEBOUNCE_TIME 10
+// TODO 32 Bits reichen nicht, was tun?
 unsigned long intputs_new, inputs_debounced;
 
 typedef enum {
@@ -80,7 +83,55 @@ typedef struct {
 	char name[10];
 } group_t;
 
+intput_t inputs[NUM_INPUTS];
 
+void setEvent(event_t event_id, unsigned char  groupId);
+void readInputs(void);
+void debounceInputs(void);
+void timeManager(void);
+void rolloControl(void);
+void setOutputs(void);
 
+static inline unsigned char GetBit(unsigned long bitfield, unsigned char bit);
+static void procInput(unsigned long inputs_new, unsigned long changes,
+                      unsigned char bit);
 
+static inline unsigned char GetBit(unsigned long bitfield, unsigned char bit) {
+    if (bit < 32)                             // Sicherheitsabgrabe
+        return (bitfield >> bit) & 1;         // Wert des Bittes zurückgeben.
+    else
+        return 0;
+}
+
+static void procInput(unsigned long inputs_new, unsigned long changes,
+                      unsigned char bit)
+{
+    // Entprellzeit herunterzählen
+    if (inputs[bit].timer > 0)          
+        inputs[bit].timer--;
+    
+    // Prüfen ob das Bit verändert wurde und dementsprechend den Entprelltimer zurücksetzen.
+    if (GetBit(changes, bit))
+        inputs[bit].timer = DEBOUNCE_TIME;
+
+    if (GetBit(hw_inputs_cur, bit)) {         // aktueller Eingang aktiv
+        if (!GetBit(inputs_debounced, bit) && // aber enptrellter Eingang inaktiv
+            inputs[bit].timer == 0) {         // und Entprelltimer abgelaufen
+            inputs_debounced |= (1UL << bit);
+            setEvent(OFF, inputs[bit].groupId);
+        }
+    } else { // aktueller Eingang aktiv
+        if (GetBit(inputs_debounced, bit) &&  // aber enptrellter Eingang aktiv
+            inputs[bit].timer == 0) {         // und Entprelltimer abgelaufen
+            inputs_debounced &= ~(1UL << bit);
+            setEvent(inputs[bit].event, inputs[bit].groupId);
+        }
+    }
+}
+
+void readInputs(void) {
+	unsigned long help = 0;
+	// 
+
+}
 
