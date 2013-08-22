@@ -1,5 +1,4 @@
-/*
- * Konzeption
+/* Konzeption
  * ==========
  *
  * Eingänge abfragen:
@@ -18,7 +17,7 @@
  *  - Neben den Eingängen kann die Uhr auch Events erzeugen, die
  *    jeweils auch mit GroupId verbunden sind.
  *  - Events kënnnen zu Debug Zwecken dargestellt werden.
- * Events verteilen Groupmanager.
+ * Events verteilen / Groupmanager.
  *  - An der Steuerung kënnen auch für alle Gruppen Events erzeugt werden.  
  *  - Die Gruppen beinhalten
  *    - einen parametrierbaren Namen (20 Zeichen)
@@ -44,6 +43,39 @@
 #define NUM_GROUPS 16
 #define DEBOUNCE_TIME 10
 #define DEBUG
+
+#define PORTA GPIO_PORTA_DATA_R
+#define PORTB GPIO_PORTB_DATA_R
+unsigned long timeInMs;
+
+
+#define SER   (1 << 5)  // PORTB
+#define RCK_O (1 << 6)  // PORTB
+#define SCK   (1 << 7)  // PORTB
+#define RCK_I (1 << 7)  // PORTA
+
+// PORTA
+#define IN_H1 (1 << 1)  // I1
+#define IN_R1 (1 << 6)  // I2
+#define IN_H2 (1 << 3)  // I3
+#define IN_R2 (1 << 2)  // I4
+#define IN_H3 (1 << 5)  // I5
+#define IN_R3 (1 << 4)  // I6
+
+
+void writeShiftReg(unsigned short val) {
+    int i;
+    for (i = 0; i < 16; i++) {
+        GPIOPinWrite(GPIO_PORTF_BASE, SER, val & 1);
+        GPIOPinWrite(GPIO_PORTF_BASE, SCK, 1);
+        val >>= 1;
+        GPIOPinWrite(GPIO_PORTF_BASE, SCK, 0);
+    }
+    GPIOPinWrite(GPIO_PORTF_BASE, RCK, 1);
+    GPIOPinWrite(GPIO_PORTF_BASE, RCK, 0);
+}
+
+
 // A
 typedef enum {
 	OFF,
@@ -186,3 +218,162 @@ void setEvent(event_t event_id, input_t *input) {
 void showEvent(event_t event_id, input_t *input) {
     // Print input, event and group
 }
+
+/*
+int main(void)
+{
+    unsigned short i, reload = 23000, value = 0xffff;
+    unsigned char buf[7];
+    //
+    // Set the clocking to run directly from the crystal.
+    //
+    SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
+                   SYSCTL_XTAL_8MHZ);
+    
+    
+    //GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+    
+    //UARTStdioInit(0);
+    //UARTprintf("\nFarbborg Cortex new\n");
+    
+    SysTickIntRegister(SysTickHandler);
+    SysTickPeriodSet(8000L); // 1 ms Tick
+    SysTickEnable();
+    SysTickIntEnable();
+    IntMasterEnable();
+    
+    
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+    
+    GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7);
+    i=1000;
+    hw_relays = 0xffffffff;
+    //
+    // Finished.
+    //
+    while (1) {
+    	if (bit_ms) {
+    		bit_ms--;
+    		hw_relays -= 3000;
+            
+    		if ((timeInMs % 100) == 0)
+                RIT128x96x4StringDraw(PrintSignedShortFormated(timeInMs, buf), 0, 16, 8);
+            
+            
+    		
+    	}
+    }
+}
+ 
+
+ */
+
+/*
+int main(void)
+{
+    int i = 500, mode = 0, time;
+    ROM_SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ); // 80 MHz
+    //
+    // Initialize the UART.
+    //
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA | SYSCTL_PERIPH_GPIOD | SYSCTL_PERIPH_GPIOF);
+    ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+    
+    UARTStdioInit(0);
+    UARTprintf("\nFarbborg Cortex new\n");
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2 | GPIO_PIN_3);
+	ROM_GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, GPIO_PIN_0);
+    SysTickIntRegister(SysTickHandler);
+    ROM_SysTickPeriodSet(80000L); // 1 ms Tick
+    ROM_SysTickEnable();
+    ROM_SysTickIntEnable();
+    ROM_IntMasterEnable();
+	time1s = 1000;
+	init_hardware();
+    
+    //
+    // Finished.
+    //
+    
+    clearImage(white);
+	fade(10, 50);
+    
+    //testAnim2();
+    //display_loop(0);
+    
+    while (1) {
+   		if (timeInMs <= 0) {
+  			timeInMs = i;
+  			if (mode)
+  				mode = 0;
+  			else
+  				mode = 1;
+  			ROM_GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_0, mode);
+  			//ROM_GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2 | GPIO_PIN_3, mode ? 0xff:0);
+        }
+      	
+        switch (ROM_UARTCharGetNonBlocking(UART0_BASE)) {
+  			case 'a':
+  				i++;
+  				UARTprintf("%d\n", i);
+  				break;
+  				
+  			case 'q':
+  				i--;
+  				UARTprintf("%d\n", i);
+  				break;
+                
+			case 'b':
+				UARTprintf("testAnim2() start\n", i);
+				testAnim2();
+				UARTprintf("testAnim2() end\n", i);
+				break;
+				
+  			case 't':
+  				time = TimerValueGet(TIMER2_BASE, TIMER_A);
+  				UARTprintf("Takte: %d\n", time);
+  				break;
+                
+            case 'T':
+				UARTprintf("testse\n");
+				break;
+                
+			case 's':
+				UARTprintf("testBlur() start\n", i);
+				testBlur();
+				UARTprintf("testBlur() end\n", i);
+				break;
+                
+  			case 'd':
+  				dump();
+  				break;
+                
+  			case 'r':
+  				test();
+  				break;
+  				
+  			case 'm':
+                for (int i = 0; i < 4000; i++) {
+                 UARTprintf("%02x ", fuckup[i]);
+                 if ((i % 16) == 15)
+                 UARTprintf("\n");
+                 }
+                break;
+                
+			case 'c':
+				viewCounts();
+				break;
+				
+  			case 'v':
+  				view_latches();
+  				break;
+  				
+  			case 'z':
+  				UARTprintf("start\n");
+  				myWait(100);
+  				UARTprintf("end\n");
+  				break;
+	   	}
+    }
+}
+*/
