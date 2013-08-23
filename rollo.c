@@ -48,6 +48,7 @@
 #define PORTB GPIO_PORTB_DATA_R
 unsigned long timeInMs;
 
+unsigned long outputs;
 
 #define SER   (1 << 5)  // PORTB
 #define RCK_O (1 << 6)  // PORTB
@@ -61,20 +62,6 @@ unsigned long timeInMs;
 #define IN_R2 (1 << 2)  // I4
 #define IN_H3 (1 << 5)  // I5
 #define IN_R3 (1 << 4)  // I6
-
-
-void writeShiftReg(unsigned short val) {
-    int i;
-    for (i = 0; i < 16; i++) {
-        GPIOPinWrite(GPIO_PORTF_BASE, SER, val & 1);
-        GPIOPinWrite(GPIO_PORTF_BASE, SCK, 1);
-        val >>= 1;
-        GPIOPinWrite(GPIO_PORTF_BASE, SCK, 0);
-    }
-    GPIOPinWrite(GPIO_PORTF_BASE, RCK, 1);
-    GPIOPinWrite(GPIO_PORTF_BASE, RCK, 0);
-}
-
 
 // A
 typedef enum {
@@ -147,13 +134,11 @@ group_t gruppen[NUM_GROUPS];
 
 void setEvent(event_t event_id, input_t *input);
 void readInputs(void);
-void debounceInputs(void);
-void timeManager(void);
-void rolloControl();
+void timeManager(void);  //
+void rolloControl(void);
 void setOutputs(void);
 void readSettingsFromEerpom(void);
-void saveSettintsInEeprom(void);
-void showEvent(event_t event_id, input_t *input);
+void saveSettingsInEeprom(void);
 
 static inline unsigned char GetBit(unsigned char bitfield, unsigned char bit) {
     if (bit < 8)                             // Sicherheitsabgrabe
@@ -199,15 +184,47 @@ static void procInput(input_t *input,
 }
 
 void readInputs(void) {
-	unsigned long help = 0;
-	// 
+	unsigned char row, i, val, changes;
+	intput_t *in_ptr = inputs;
 
+	for (row = 0; row < 6; row++) {
+		val = (1 << row);
+		for (i = 0; i < 6; i++) {
+		    GPIOPinWrite(GPIO_PORTB_BASE, SER, c & 1);
+		    GPIOPinWrite(GPIO_PORTB_BASE, SCK, 1);
+		    val >>= 1;
+		    GPIOPinWrite(GPIO_PORTB_BASE, SCK, 0);
+        }
+    	GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 1);
+    	GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 0);
+    	val =  (GPIOPinRead(GPIO_PORTA_BASE, IN_H1) << 0) |
+			   (GPIOPinRead(GPIO_PORTA_BASE, IN_R1) << 1) |
+			   (GPIOPinRead(GPIO_PORTA_BASE, IN_H2) << 2) |
+			   (GPIOPinRead(GPIO_PORTA_BASE, IN_R2) << 3) |
+			   (GPIOPinRead(GPIO_PORTA_BASE, IN_H3) << 4) |
+			   (GPIOPinRead(GPIO_PORTA_BASE, IN_R3) << 5);
+    	changes = val ^ intputs_new[row];
+		intputs_new[row] = val;
+		for (i = 0; i < 6; i++) {
+			  procInput(in_ptr, &intputs_new[row], &intputs_debounced[row], changes, i);
+			  in_ptr++;
+		}
+    }	
+	
+	// Am ende strom sparen
+	GPIOPinWrite(GPIO_PORTB_BASE, SER, 0);
+	for (i = 0; i < 6; i++) {
+	    GPIOPinWrite(GPIO_PORTB_BASE, SCK, 1);
+	    GPIOPinWrite(GPIO_PORTB_BASE, SCK, 0);
+    }
+	GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 1);
+	GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 0);
 }
 
 void setEvent(event_t event_id, input_t *input) {
     group_t *group;
 #ifdef DEBUG
-    showEvent(event_id, input);
+    UARTprintf("Event %d group=%d %s\n", event_id, input->group_id, input->name);
 #endif
     if (input->groupId >= NUM_GROUPS)
         return;
@@ -215,8 +232,34 @@ void setEvent(event_t event_id, input_t *input) {
     
 }
 
-void showEvent(event_t event_id, input_t *input) {
-    // Print input, event and group
+void setOutputs() {
+    unsigned long val = outputs, i;
+	int i;
+    for (i = 0; i < 32; i++) {
+        GPIOPinWrite(GPIO_PORTB_BASE, SER, val & 1);
+        GPIOPinWrite(GPIO_PORTB_BASE, SCK, 1);
+        val >>= 1;
+        GPIOPinWrite(GPIO_PORTB_BASE, SCK, 0);
+    }
+    GPIOPinWrite(GPIO_PORTB_BASE, RCK_O, 1);
+    GPIOPinWrite(GPIO_PORTB_BASE, RCK_O, 0);
+}
+
+void readSettingsFromEerpom(void) {
+ 	// hier wird erstmal initialisiert. spaeter eeprom
+
+}
+
+void rolloControl(void) {
+
+}
+
+void setOutputs(void) {
+
+}
+
+void saveSettingsInEeprom(void) {
+
 }
 
 /*
@@ -268,112 +311,33 @@ int main(void)
 
  */
 
-/*
-int main(void)
-{
+
+int main(void) {
     int i = 500, mode = 0, time;
     ROM_SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ); // 80 MHz
     //
     // Initialize the UART.
-    //
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA | SYSCTL_PERIPH_GPIOD | SYSCTL_PERIPH_GPIOF);
-    ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+    //         TODO andere serielle suchen
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA | SYSCTL_PERIPH_GPIOB | SYSCTL_PERIPH_GPIOD | SYSCTL_PERIPH_GPIOF);
+    //ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
     
-    UARTStdioInit(0);
-    UARTprintf("\nFarbborg Cortex new\n");
-    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2 | GPIO_PIN_3);
-	ROM_GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, GPIO_PIN_0);
+    //UARTStdioInit(0);
+    //UARTprintf("\nFarbborg Cortex new\n");
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, RCK_O);
+	ROM_GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, SER | RCK_O | SCK);
     SysTickIntRegister(SysTickHandler);
     ROM_SysTickPeriodSet(80000L); // 1 ms Tick
     ROM_SysTickEnable();
     ROM_SysTickIntEnable();
     ROM_IntMasterEnable();
-	time1s = 1000;
-	init_hardware();
+    readSettingsFromEerpom();
     
-    //
-    // Finished.
-    //
-    
-    clearImage(white);
-	fade(10, 50);
-    
-    //testAnim2();
-    //display_loop(0);
-    
-    while (1) {
-   		if (timeInMs <= 0) {
-  			timeInMs = i;
-  			if (mode)
-  				mode = 0;
-  			else
-  				mode = 1;
-  			ROM_GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_0, mode);
-  			//ROM_GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2 | GPIO_PIN_3, mode ? 0xff:0);
-        }
-      	
-        switch (ROM_UARTCharGetNonBlocking(UART0_BASE)) {
-  			case 'a':
-  				i++;
-  				UARTprintf("%d\n", i);
-  				break;
-  				
-  			case 'q':
-  				i--;
-  				UARTprintf("%d\n", i);
-  				break;
-                
-			case 'b':
-				UARTprintf("testAnim2() start\n", i);
-				testAnim2();
-				UARTprintf("testAnim2() end\n", i);
-				break;
-				
-  			case 't':
-  				time = TimerValueGet(TIMER2_BASE, TIMER_A);
-  				UARTprintf("Takte: %d\n", time);
-  				break;
-                
-            case 'T':
-				UARTprintf("testse\n");
-				break;
-                
-			case 's':
-				UARTprintf("testBlur() start\n", i);
-				testBlur();
-				UARTprintf("testBlur() end\n", i);
-				break;
-                
-  			case 'd':
-  				dump();
-  				break;
-                
-  			case 'r':
-  				test();
-  				break;
-  				
-  			case 'm':
-                for (int i = 0; i < 4000; i++) {
-                 UARTprintf("%02x ", fuckup[i]);
-                 if ((i % 16) == 15)
-                 UARTprintf("\n");
-                 }
-                break;
-                
-			case 'c':
-				viewCounts();
-				break;
-				
-  			case 'v':
-  				view_latches();
-  				break;
-  				
-  			case 'z':
-  				UARTprintf("start\n");
-  				myWait(100);
-  				UARTprintf("end\n");
-  				break;
-	   	}
-    }
+	while (1) {
+	 	if (ms) {
+			ms--;
+			readInputs();
+			
+		
+		}
+	}
 }
-*/
