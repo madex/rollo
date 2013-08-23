@@ -1,7 +1,7 @@
 /* Konzeption
  * ==========
  *
- * Eingänge abfragen:
+ * Eing√§nge abfragen:
  *  - Ablauf
  *    - ser clk !clk !ser rck_i !rck_i einlesen (stecker 1)
  *          clk !clk rck_i !rck_i einlesen (stecker 2)
@@ -9,46 +9,57 @@
  *          clk !clk rck_i !rck_i einlesen (stecker 4)
  *          clk !clk rck_i !rck_i einlesen (stecker 5)
  *          clk !clk rck_i !rck_i einlesen (stecker 6)
- *  - 36 Eingänge entprellen. Jedes Rollo (2 Eingänge) hat eine eigene
+ *  - 36 Eing√§nge entprellen. Jedes Rollo (2 Eing√§nge) hat eine eigene
  *    Struct mit Timer und Zustand, GroupId und einen freiparametrierbaren Namen.
- *  - Die 18 Rollo Inputs können Events erzeugen. Up, Down, Stop ..
- *  - Jedes Rollo hat eine GroupId. Mehrere RolloMotoren können mit 
+ *  - Die 18 Rollo Inputs k√∂nnen Events erzeugen. EVT_UP, EVT_DOWN, EVT_STOP ..
+ *  - Jedes Rollo hat eine GroupId. Mehrere RolloMotoren k√∂nnen mit
  *    einer GroupId addressiert werden.
- *  - Neben den Eingängen kann die Uhr auch Events erzeugen, die
+ *  - Neben den Eing√§ngen kann die Uhr auch Events erzeugen, die
  *    jeweils auch mit GroupId verbunden sind.
- *  - Events kënnnen zu Debug Zwecken dargestellt werden.
+ *  - Events k√´nnnen zu Debug Zwecken dargestellt werden.
  * Events verteilen / Groupmanager.
- *  - An der Steuerung kënnen auch für alle Gruppen Events erzeugt werden.  
+ *  - An der Steuerung k√´nnen auch f√ºr alle Gruppen Events erzeugt werden.
  *  - Die Gruppen beinhalten
  *    - einen parametrierbaren Namen (20 Zeichen)
- *    - eine Ausgangsbitmaske mit alle Ausgänge die angesprochen werden sollen.
- *    - eine Priorität? (Noch unklar wie sie funktionieren soll)
+ *    - eine Ausgangsbitmaske mit alle Ausg√§nge die angesprochen werden sollen.
+ *    - eine Priorit√§t? (Noch unklar wie sie funktionieren soll)
  *    - Es gibt maximal 30 Gruppen. (siehe unten)
- *    - Der GroupManager wertet entsprechend der Gruppe und der Priorität die
+ *    - Der GroupManager wertet entsprechend der Gruppe und der Priorit√§t die
  *      Events aus und leitet sie an die entsprechenden RolloControls weiter.
- *  - Es gibt 10 Rollos. Die restlichen 12 Relaisausgänge könnten andersweitig
- *    z.B. für zeitschaltfunktionen benutzt werden.
+ *  - Es gibt 10 Rollos. Die restlichen 12 Relaisausg√§nge k√∂nnten andersweitig
+ *    z.B. f√ºr zeitschaltfunktionen benutzt werden.
  * Rollos Motoren betreiben. RolloControl
  *  - Die Rolladen sollen
  *  - 10 ms Takt 
  * 
- * Rollos   KüFe KüTü WZLi WZRe GäWC HWR BAD KiRe KiLi SZim
- * Gruppen  KüFe KüTü WZLi WZRe GäWC HWR BAD KiRe KiLi SZim
- *          Kü(KüFe KüTü) Wz(WZLi WZRe) Unten(KüFe KüTü WZLi WZRe GäWC HWR)
+ * Rollos   K√ºFe K√ºT√º WZLi WZRe G√§WC HWR BAD KiRe KiLi SZim
+ * Gruppen  K√ºFe K√ºT√º WZLi WZRe G√§WC HWR BAD KiRe KiLi SZim
+ *          K√º(K√ºFe K√ºT√º) Wz(WZLi WZRe) Unten(K√ºFe K√ºT√º WZLi WZRe G√§WC HWR)
  *          Oben(BAD KiRe KiLi SZim) Alle(..)
  *
  * written by Martin Ongsiek
  */
+#include <inc/lm3s9b96.h>
+#include <inc/hw_memmap.h>
+#include <inc/hw_types.h>
+#include <driverlib/debug.h>
+#include <driverlib/gpio.h>
+#include <driverlib/rom.h>
+#include <driverlib/sysctl.h>
+#include <driverlib/systick.h>
+#include <driverlib/timer.h>
+#include <utils/uartstdio.h>
+
 #define NUM_INPUTS 32
 #define NUM_GROUPS 16
 #define DEBOUNCE_TIME 10
-#define DEBUG
 
 #define PORTA GPIO_PORTA_DATA_R
 #define PORTB GPIO_PORTB_DATA_R
-unsigned long timeInMs;
 
 unsigned long outputs;
+unsigned char timeInMs;
+
 
 #define SER   (1 << 5)  // PORTB
 #define RCK_O (1 << 6)  // PORTB
@@ -65,10 +76,10 @@ unsigned long outputs;
 
 // A
 typedef enum {
-	OFF,
-	ON,
-	UP,
-	DOWN,
+	EVT_OFF,
+	EVT_ON,
+	EVT_UP,
+	EVT_DOWN,
 } event_t;
 
 // A
@@ -77,7 +88,7 @@ typedef struct {
 	unsigned char  groupId;
 	char name[10];
 	event_t event;
-} intput_t;
+} input_t;
 
 // C
 typedef struct {
@@ -102,18 +113,17 @@ typedef struct {
 	char          name[20];
 } group_t;
 
-// TODO define was das seien soll.
 typedef enum {
     UP_START,
     UP,
     DOWN_START,
     DOWN,
-    STOP_START
-    STOP,
+    STOP_START,
+    STOP
 } outputState_t;
 
 typedef enum {
-    ROLLO,   // events UP, DOWN und OFF
+    ROLLO,   // events UP, EVT_DOWN und OFF
     OUTPUT   // ON und OFF
 } outputType_t;
 
@@ -125,11 +135,11 @@ typedef struct {
     unsigned short maxTime;
 } output_t;
 
-// Speicher für die Eingänge.
-intput_t inputs[NUM_INPUTS];
+// Speicher f√ºr die Eing√§nge.
+input_t inputs[NUM_INPUTS];
 // jeweils nur 6 Bit pro Byte. Wie bei der Hardware.
 unsigned char intputs_new[6], inputs_debounced[6];
-// Speicher für Gruppen
+// Speicher f√ºr Gruppen
 group_t gruppen[NUM_GROUPS];
 
 void setEvent(event_t event_id, input_t *input);
@@ -142,29 +152,29 @@ void saveSettingsInEeprom(void);
 
 static inline unsigned char GetBit(unsigned char bitfield, unsigned char bit) {
     if (bit < 8)                             // Sicherheitsabgrabe
-        return (bitfield >> bit) & 1;        // Wert des Bittes zur¸ckgeben.
+        return (bitfield >> bit) & 1;        // Wert des Bittes zur¬∏ckgeben.
     else
         return 0;
 }
 
 /**
- * Verarbeite einen Eingang und entprelle ihn. Bei Änderungen wird ein Event erzeugt.
+ * Verarbeite einen Eingang und entprelle ihn. Bei √Ñnderungen wird ein Event erzeugt.
  * @param *input Zeiger auf Datenstrucktur des Einganges
- * @param *inputs_new Zeiger auf den neuen Zustand der eingelesen Eingänge. (6 Eingänge bitweise)
- * @param *inputs_debounced Zeiger auf den enprellten Zustand der Eingänge. (6 Eingänge bitweise)
- * @param changes Die Veränderungen der Eingänge bitweise (inputs_new  xor  neu eingelesene Eingänge)
- * @param bit das aktuelle bit des Einganges für inputs_new, inputs_debounced und changes.
+ * @param *inputs_new Zeiger auf den neuen Zustand der eingelesen Eing√§nge. (6 Eing√§nge bitweise)
+ * @param *inputs_debounced Zeiger auf den enprellten Zustand der Eing√§nge. (6 Eing√§nge bitweise)
+ * @param changes Die Ver√§nderungen der Eing√§nge bitweise (inputs_new  xor  neu eingelesene Eing√§nge)
+ * @param bit das aktuelle bit des Einganges f√ºr inputs_new, inputs_debounced und changes.
  */
 static void procInput(input_t *input,
                       unsigned char *inputs_new,
                       unsigned char *inputs_debounced,
                       unsigned char changes,
                       unsigned char bit) {
-    // Entprellzeit herunterzählen
+    // Entprellzeit herunterz√§hlen
     if (input->timer > 0)
         input->timer--;
     
-    // Prüfen ob das Bit verändert wurde und dementsprechend den Entprelltimer zurücksetzen.
+    // Pr√ºfen ob das Bit ver√§ndert wurde und dementsprechend den Entprelltimer zur√ºcksetzen.
     if (GetBit(changes, bit))
         input->timer = DEBOUNCE_TIME;
 
@@ -172,7 +182,7 @@ static void procInput(input_t *input,
         if (!GetBit(*inputs_debounced, bit) && // aber enptrellter Eingang inaktiv
             input->timer == 0) {               // und Entprelltimer abgelaufen
             *inputs_debounced |= (1 << bit);
-            setEvent(OFF, input);
+            setEvent(EVT_OFF, input);
         }
     } else { // aktueller Eingang aktiv
         if (GetBit(*inputs_debounced, bit) &&  // aber enptrellter Eingang aktiv
@@ -185,18 +195,27 @@ static void procInput(input_t *input,
 
 void readInputs(void) {
 	unsigned char row, i, val, changes;
-	intput_t *in_ptr = inputs;
+	input_t *in_ptr = inputs;
 
 	for (row = 0; row < 6; row++) {
 		val = (1 << row);
 		for (i = 0; i < 6; i++) {
-		    GPIOPinWrite(GPIO_PORTB_BASE, SER, c & 1);
-		    GPIOPinWrite(GPIO_PORTB_BASE, SCK, 1);
-		    val >>= 1;
-		    GPIOPinWrite(GPIO_PORTB_BASE, SCK, 0);
-        }
-    	GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 1);
-    	GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 0);
+			if (val & 1)
+				PORTB |= SER;
+			else
+				PORTB &= ~SER;
+			PORTB |= SCK;
+			//GPIOPinWrite(GPIO_PORTB_BASE, SER, val & 1);
+			//GPIOPinWrite(GPIO_PORTB_BASE, SCK, 1);
+			val >>= 1;
+			PORTB &= ~SCK;
+			//GPIOPinWrite(GPIO_PORTB_BASE, SCK, 0);
+		}
+
+	 	PORTA |= RCK_I;
+		PORTA &= ~RCK_I;
+    	//GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 1);
+    	//GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 0);
     	val =  (GPIOPinRead(GPIO_PORTA_BASE, IN_H1) << 0) |
 			   (GPIOPinRead(GPIO_PORTA_BASE, IN_R1) << 1) |
 			   (GPIOPinRead(GPIO_PORTA_BASE, IN_H2) << 2) |
@@ -206,7 +225,7 @@ void readInputs(void) {
     	changes = val ^ intputs_new[row];
 		intputs_new[row] = val;
 		for (i = 0; i < 6; i++) {
-			  procInput(in_ptr, &intputs_new[row], &intputs_debounced[row], changes, i);
+			  procInput(in_ptr, &intputs_new[row], &inputs_debounced[row], changes, i);
 			  in_ptr++;
 		}
     }	
@@ -224,17 +243,16 @@ void readInputs(void) {
 void setEvent(event_t event_id, input_t *input) {
     group_t *group;
 #ifdef DEBUG
-    UARTprintf("Event %d group=%d %s\n", event_id, input->group_id, input->name);
+    UARTprintf("Event %d group=%d %s\n", event_id, input->groupId, input->name);
 #endif
     if (input->groupId >= NUM_GROUPS)
         return;
-    group = gruppen[input->groupId];
+    group = &gruppen[input->groupId];
     
 }
 
-void setOutputs() {
+void setOutputs(void) {
     unsigned long val = outputs, i;
-	int i;
     for (i = 0; i < 32; i++) {
         GPIOPinWrite(GPIO_PORTB_BASE, SER, val & 1);
         GPIOPinWrite(GPIO_PORTB_BASE, SCK, 1);
@@ -246,7 +264,7 @@ void setOutputs() {
 }
 
 void readSettingsFromEerpom(void) {
- 	// hier wird erstmal initialisiert. spaeter eeprom
+ 	// hier wird erstmal initialisiert. sp√§ter eeprom
 
 }
 
@@ -254,13 +272,23 @@ void rolloControl(void) {
 
 }
 
-void setOutputs(void) {
-
-}
-
 void saveSettingsInEeprom(void) {
 
 }
+
+#ifdef DEBUG
+void
+__error__(char *pcFilename, unsigned long ulLine)
+{
+        UARTprintf("ERROR: %s:%d\n", pcFilename, ulLine);
+}
+#endif
+
+
+void SysTickHandler(void) {
+	timeInMs--;
+}
+
 
 /*
 int main(void)
@@ -311,7 +339,6 @@ int main(void)
 
  */
 
-
 int main(void) {
     int i = 500, mode = 0, time;
     ROM_SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ); // 80 MHz
@@ -325,6 +352,7 @@ int main(void) {
     //UARTprintf("\nFarbborg Cortex new\n");
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, RCK_O);
 	ROM_GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, SER | RCK_O | SCK);
+	ROM_GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, IN_H1 | IN_R1 | IN_H2 | IN_R2 | IN_H3 | IN_R3);
     SysTickIntRegister(SysTickHandler);
     ROM_SysTickPeriodSet(80000L); // 1 ms Tick
     ROM_SysTickEnable();
@@ -333,11 +361,11 @@ int main(void) {
     readSettingsFromEerpom();
     
 	while (1) {
-	 	if (ms) {
-			ms--;
+	 	if (timeInMs) {
+	 		timeInMs--;
 			readInputs();
-			
-		
+			rolloControl();
+			setOutputs();
 		}
 	}
 }
