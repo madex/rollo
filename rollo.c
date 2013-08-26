@@ -50,6 +50,9 @@
 #include <driverlib/timer.h>
 #include <utils/uartstdio.h>
 
+
+#undef DEBUG
+
 #define NUM_INPUTS 32
 #define NUM_GROUPS 16
 #define DEBOUNCE_TIME 10
@@ -63,18 +66,18 @@ unsigned long outputs;
 unsigned char timeInMs;
 
 
-#define SER   (1 << 5)  // PORTB
-#define RCK_O (1 << 6)  // PORTB
-#define SCK   (1 << 7)  // PORTB
-#define RCK_I (1 << 7)  // PORTA
+#define P_SER   GPIO_PIN_5  // PORTB
+#define P_RCK_O GPIO_PIN_6 // PORTB
+#define P_SCK   GPIO_PIN_7  // PORTB
+#define P_RCK_I GPIO_PIN_7 // PORTA
 
 // PORTA
-#define IN_H1 (1 << 1)  // I1
-#define IN_R1 (1 << 6)  // I2
-#define IN_H2 (1 << 3)  // I3
-#define IN_R2 (1 << 2)  // I4
-#define IN_H3 (1 << 5)  // I5
-#define IN_R3 (1 << 4)  // I6
+#define IN_H1 GPIO_PIN_1  // I1
+#define IN_R1 GPIO_PIN_6  // I2
+#define IN_H2 GPIO_PIN_3  // I3
+#define IN_R2 GPIO_PIN_2  // I4
+#define IN_H3 GPIO_PIN_5  // I5
+#define IN_R3 GPIO_PIN_4  // I6
 
 // A
 typedef enum {
@@ -226,23 +229,23 @@ void readInputs(void) {
 		val = (1 << row);
 		for (i = 0; i < 6; i++) {
 			if (val & 1)
-				PORTB |= SER;
+				PORTB |= P_SER;
 			else
-				PORTB &= ~SER;
+				PORTB &= ~P_SER;
 			wait();
-			PORTB |= SCK;
+			PORTB |= P_SCK;
 			wait();
 			//GPIOPinWrite(GPIO_PORTB_BASE, SER, val & 1);
 			//GPIOPinWrite(GPIO_PORTB_BASE, SCK, 1);
 			val >>= 1;
-			PORTB &= ~SCK;
+			PORTB &= ~P_SCK;
 			//GPIOPinWrite(GPIO_PORTB_BASE, SCK, 0);
 		}
-		PORTB &= ~SER;
+		PORTB &= ~P_SER;
 		wait();
-	 	PORTA |= RCK_I;
+	 	PORTA |= P_RCK_I;
 	 	wait();
-		PORTA &= ~RCK_I;
+		PORTA &= ~P_RCK_I;
     	//GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 1);
     	//GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 0);
     	val =  (GPIOPinRead(GPIO_PORTA_BASE, IN_H1) << 0) |
@@ -261,39 +264,37 @@ void readInputs(void) {
 	
 	// Am ende strom sparen
 	//GPIOPinWrite(GPIO_PORTB_BASE, SER, 0)
-	PORTB &= ~SER;
+	PORTB &= ~P_SER;
 	for (i = 0; i < 6; i++) {
-		PORTB |= SCK;
+		PORTB |= P_SCK;
 		wait();
 		//GPIOPinWrite(GPIO_PORTB_BASE, SCK, 1);
 		val >>= 1;
-		PORTB &= ~SCK;
+		PORTB &= ~P_SCK;
 		//GPIOPinWrite(GPIO_PORTB_BASE, SCK, 0);
 		wait();
 	}
 }
 
-void setEvent(event_t event_id, input_t *input) {
-    group_t *group;
+void setEvent(event_t event, input_t *input) {
 #ifdef DEBUG
-    UARTprintf("Event %d group=%d %s\n", event_id, input->groupId, input->name);
+    UARTprintf("Event %d %s\n", event, input->name);
 #endif
-    if (input->groupId >= NUM_GROUPS)
-        return;
-    group = &gruppen[input->groupId];
+
+
     
 }
 
 void setOutputs(void) {
     unsigned long val = outputs, i;
     for (i = 0; i < 32; i++) {
-        GPIOPinWrite(GPIO_PORTB_BASE, SER, val & 1);
-        GPIOPinWrite(GPIO_PORTB_BASE, SCK, 1);
+        GPIOPinWrite(GPIO_PORTB_BASE, P_SER, val & 1);
+        GPIOPinWrite(GPIO_PORTB_BASE, P_SCK, 1);
         val >>= 1;
-        GPIOPinWrite(GPIO_PORTB_BASE, SCK, 0);
+        GPIOPinWrite(GPIO_PORTB_BASE, P_SCK, 0);
     }
-    GPIOPinWrite(GPIO_PORTB_BASE, RCK_O, 1);
-    GPIOPinWrite(GPIO_PORTB_BASE, RCK_O, 0);
+    GPIOPinWrite(GPIO_PORTB_BASE, P_RCK_O, 1);
+    GPIOPinWrite(GPIO_PORTB_BASE, P_RCK_O, 0);
 }
 
 void readSettingsFromEerpom(void) {
@@ -324,22 +325,22 @@ void SysTickHandler(void) {
 int main(void) {
     int i = 500, mode = 0, time;
     ROM_SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ); // 80 MHz
-    //
+    ROM_SysTickPeriodSet(80000L); // 1 ms Tick
+	ROM_SysTickEnable();
+	ROM_SysTickIntEnable();
+	ROM_IntMasterEnable();
     // Initialize the UART.
     // TODO andere serielle suchen
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA | SYSCTL_PERIPH_GPIOB);
     //ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-    
     //UARTStdioInit(0);
     //UARTprintf("\nFarbborg Cortex new\n");
-    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, RCK_I);
-	ROM_GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, SER | RCK_O | SCK);
-	ROM_GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, IN_H1 | IN_R1 | IN_H2 | IN_R2 | IN_H3 | IN_R3);
-    SysTickIntRegister(SysTickHandler);
-    ROM_SysTickPeriodSet(80000L); // 1 ms Tick
-    ROM_SysTickEnable();
-    ROM_SysTickIntEnable();
-    ROM_IntMasterEnable();
+
+	GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, IN_H1 | IN_R1 | IN_H2 | IN_R2 | IN_H3 | IN_R3);
+	GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, P_RCK_I);
+	GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, P_SER | P_RCK_O | P_SCK);
+	SysTickIntRegister(SysTickHandler);
+
     readSettingsFromEerpom();
     
 	while (1) {
