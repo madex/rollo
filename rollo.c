@@ -57,6 +57,8 @@
 #define PORTA GPIO_PORTA_DATA_R
 #define PORTB GPIO_PORTB_DATA_R
 
+#define OUT(x) (1UL << x)
+
 unsigned long outputs;
 unsigned char timeInMs;
 
@@ -85,16 +87,16 @@ typedef enum {
 // A
 typedef struct {
 	unsigned short timer;
-	unsigned char  groupId;
 	char name[10];
 	event_t event;
+    unsigned long outputs;
 } input_t;
 
 // C
 typedef struct {
 	unsigned char days;           // bit 7 mon bit 6 die ... 1 son
 	unsigned char hour, min;
-	unsigned char groupId;
+	unsigned long outputs;
 	event_t event;
 } time_t;
 
@@ -103,15 +105,10 @@ typedef struct {
 	unsigned char days;           // bit 7 mon bit 6 die ... 1 son
 	unsigned char sonnenaufgang;  // 0 = sonnenuntergang
 	short         timeDiff;       // Zeit bevor (-) oder nach dem Sonnenaufgang oder Sonnenuntergang.
-	unsigned char groupId;        // GruppenId
+	unsigned long outputs;
 	event_t event;                // event
 } smart_time_t;
 
-// A
-typedef struct {
-	unsigned long outputs;
-	char          name[20];
-} group_t;
 
 typedef enum {
     UP_START,
@@ -127,20 +124,32 @@ typedef enum {
     OUTPUT   // ON und OFF
 } outputType_t;
 
+
+// Speicher für die Eingänge.
+input_t inputs[NUM_INPUTS] = {
+{0, "In0\0\0\0\0\0\0", EVT_UP,   OUT(0)},
+{0, "In0\0\0\0\0\0\0", EVT_DOWN, OUT(0)},    
+{0, "In1\0\0\0\0\0\0", EVT_UP,   OUT(1)},
+{0, "In1\0\0\0\0\0\0", EVT_DOWN, OUT(1)},
+{0, "In2\0\0\0\0\0\0", EVT_UP,   OUT(0) | OUT(1)},
+{0, "In2\0\0\0\0\0\0", EVT_DOWN, OUT(0) | OUT(1)},  
+// ...
+};
+
 typedef struct {
-    char           name[20];
     outputState_t  state;
     outputType_t   type;
     unsigned short timer;
     unsigned short maxTime;
+    char           name[20];
 } output_t;
 
-// Speicher für die Eingänge.
-input_t inputs[NUM_INPUTS];
+output_t output[32] = {
+{0 , ROLLO, 0, 300, "sadf"},
+};
+
 // jeweils nur 6 Bit pro Byte. Wie bei der Hardware.
 unsigned char intputs_new[6], inputs_debounced[6];
-// Speicher für Gruppen
-group_t gruppen[NUM_GROUPS];
 
 void setEvent(event_t event_id, input_t *input);
 void readInputs(void);
@@ -302,8 +311,7 @@ void saveSettingsInEeprom(void) {
 
 #ifdef DEBUG
 void
-__error__(char *pcFilename, unsigned long ulLine)
-{
+__error__(char *pcFilename, unsigned long ulLine) {
         UARTprintf("ERROR: %s:%d\n", pcFilename, ulLine);
 }
 #endif
