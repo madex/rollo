@@ -50,7 +50,6 @@
 #include <driverlib/timer.h>
 #include <utils/uartstdio.h>
 
-
 #undef DEBUG
 
 #define NUM_INPUTS 32
@@ -66,9 +65,9 @@ unsigned long outputs;
 unsigned char timeInMs;
 
 
-#define P_SER   GPIO_PIN_5  // PORTB
+#define P_SER   GPIO_PIN_5 // PORTB
 #define P_RCK_O GPIO_PIN_6 // PORTB
-#define P_SCK   GPIO_PIN_7  // PORTB
+#define P_SCK   GPIO_PIN_7 // PORTB
 #define P_RCK_I GPIO_PIN_7 // PORTA
 
 // PORTA
@@ -334,6 +333,7 @@ int main(void) {
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA | SYSCTL_PERIPH_GPIOB);
     //ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
     //UARTStdioInit(0);
+    //
     //UARTprintf("\nFarbborg Cortex new\n");
 
 	GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, IN_H1 | IN_R1 | IN_H2 | IN_R2 | IN_H3 | IN_R3);
