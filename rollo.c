@@ -192,6 +192,22 @@ static void procInput(input_t *input,
         }
     }
 }
+static void wait() {
+	__asm("nop");
+	__asm("nop");
+	__asm("nop");
+	__asm("nop");
+	__asm("nop");
+	__asm("nop");
+	__asm("nop");
+	__asm("nop");
+	__asm("nop");
+	__asm("nop");
+	__asm("nop");
+	__asm("nop");
+	__asm("nop");
+	__asm("nop");
+}
 
 void readInputs(void) {
 	unsigned char row, i, val, changes;
@@ -204,15 +220,19 @@ void readInputs(void) {
 				PORTB |= SER;
 			else
 				PORTB &= ~SER;
+			wait();
 			PORTB |= SCK;
+			wait();
 			//GPIOPinWrite(GPIO_PORTB_BASE, SER, val & 1);
 			//GPIOPinWrite(GPIO_PORTB_BASE, SCK, 1);
 			val >>= 1;
 			PORTB &= ~SCK;
 			//GPIOPinWrite(GPIO_PORTB_BASE, SCK, 0);
 		}
-
+		PORTB &= ~SER;
+		wait();
 	 	PORTA |= RCK_I;
+	 	wait();
 		PORTA &= ~RCK_I;
     	//GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 1);
     	//GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 0);
@@ -231,13 +251,17 @@ void readInputs(void) {
     }	
 	
 	// Am ende strom sparen
-	GPIOPinWrite(GPIO_PORTB_BASE, SER, 0);
+	//GPIOPinWrite(GPIO_PORTB_BASE, SER, 0)
+	PORTB &= ~SER;
 	for (i = 0; i < 6; i++) {
-	    GPIOPinWrite(GPIO_PORTB_BASE, SCK, 1);
-	    GPIOPinWrite(GPIO_PORTB_BASE, SCK, 0);
-    }
-	GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 1);
-	GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 0);
+		PORTB |= SCK;
+		wait();
+		//GPIOPinWrite(GPIO_PORTB_BASE, SCK, 1);
+		val >>= 1;
+		PORTB &= ~SCK;
+		//GPIOPinWrite(GPIO_PORTB_BASE, SCK, 0);
+		wait();
+	}
 }
 
 void setEvent(event_t event_id, input_t *input) {
@@ -289,68 +313,18 @@ void SysTickHandler(void) {
 	timeInMs--;
 }
 
-
-/*
-int main(void)
-{
-    unsigned short i, reload = 23000, value = 0xffff;
-    unsigned char buf[7];
-    //
-    // Set the clocking to run directly from the crystal.
-    //
-    SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
-                   SYSCTL_XTAL_8MHZ);
-    
-    
-    //GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-    
-    //UARTStdioInit(0);
-    //UARTprintf("\nFarbborg Cortex new\n");
-    
-    SysTickIntRegister(SysTickHandler);
-    SysTickPeriodSet(8000L); // 1 ms Tick
-    SysTickEnable();
-    SysTickIntEnable();
-    IntMasterEnable();
-    
-    
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-    
-    GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7);
-    i=1000;
-    hw_relays = 0xffffffff;
-    //
-    // Finished.
-    //
-    while (1) {
-    	if (bit_ms) {
-    		bit_ms--;
-    		hw_relays -= 3000;
-            
-    		if ((timeInMs % 100) == 0)
-                RIT128x96x4StringDraw(PrintSignedShortFormated(timeInMs, buf), 0, 16, 8);
-            
-            
-    		
-    	}
-    }
-}
- 
-
- */
-
 int main(void) {
     int i = 500, mode = 0, time;
     ROM_SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ); // 80 MHz
     //
     // Initialize the UART.
-    //         TODO andere serielle suchen
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA | SYSCTL_PERIPH_GPIOB | SYSCTL_PERIPH_GPIOD | SYSCTL_PERIPH_GPIOF);
+    // TODO andere serielle suchen
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA | SYSCTL_PERIPH_GPIOB);
     //ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
     
     //UARTStdioInit(0);
     //UARTprintf("\nFarbborg Cortex new\n");
-    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, RCK_O);
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, RCK_I);
 	ROM_GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, SER | RCK_O | SCK);
 	ROM_GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, IN_H1 | IN_R1 | IN_H2 | IN_R2 | IN_H3 | IN_R3);
     SysTickIntRegister(SysTickHandler);
@@ -365,7 +339,7 @@ int main(void) {
 	 		timeInMs--;
 			readInputs();
 			rolloControl();
-			setOutputs();
+			//setOutputs();
 		}
 	}
 }
