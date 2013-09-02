@@ -49,9 +49,10 @@
 #include <driverlib/systick.h>
 #include <driverlib/timer.h>
 #include <utils/uartstdio.h>
+#include <utils/flash_pb.h>
 
 //#undef DEBUG
-
+//#define DEBUG
 #define NUM_INPUTS 32
 #define NUM_GROUPS 16
 #define DEBOUNCE_TIME 10
@@ -72,12 +73,12 @@ unsigned char timeInMs;
 #define P_RCK_I GPIO_PIN_7 // PORTA
 
 // PORTA
-#define IN_H1 2  // I1 PORTD
-#define IN_R1 6  // I2
-#define IN_H2 3  // I3
-#define IN_R2 2  // I4
-#define IN_H3 5  // I5
-#define IN_R3 4  // I6
+#define IN_H1  2  // I1 PORTD
+#define IN_R1  6  // I2
+#define IN_H2  3  // I3
+#define IN_R2  2  // I4
+#define IN_H3  5  // I5
+#define IN_R3  4  // I6
 
 // A
 typedef enum {
@@ -85,6 +86,7 @@ typedef enum {
 	EVT_ON,
 	EVT_UP,
 	EVT_DOWN,
+	EVT_CONT,
 } event_t;
 
 // A
@@ -100,7 +102,7 @@ typedef struct {
 	unsigned char days;           // bit 7 mon bit 6 die ... 1 son
 	unsigned char hour, min;
 	unsigned long outputs;
-	event_t event;
+	event_t       event;
 } time_t;
 
 // C
@@ -130,13 +132,14 @@ typedef enum {
 
 // Speicher für die Eingänge.
 input_t inputs[NUM_INPUTS] = {
-{0, "In0\0\0\0\0\0\0", EVT_UP,   OUT(0)},
-{0, "In0\0\0\0\0\0\0", EVT_DOWN, OUT(0)},    
-{0, "In1\0\0\0\0\0\0", EVT_UP,   OUT(1)},
-{0, "In1\0\0\0\0\0\0", EVT_DOWN, OUT(1)},
-{0, "In2\0\0\0\0\0\0", EVT_UP,   OUT(0) | OUT(1)},
-{0, "In2\0\0\0\0\0\0", EVT_DOWN, OUT(0) | OUT(1)},  
-// ...
+ {0, "In0\0\0\0\0\0\0", EVT_UP,   OUT(0)},
+ {0, "In0\0\0\0\0\0\0", EVT_DOWN, OUT(0)},
+ {0, "In1\0\0\0\0\0\0", EVT_UP,   OUT(1)},
+ {0, "In1\0\0\0\0\0\0", EVT_DOWN, OUT(1)},
+ {0, "In2\0\0\0\0\0\0", EVT_UP,   OUT(0) | OUT(1)},
+ {0, "In2\0\0\0\0\0\0", EVT_DOWN, OUT(0) | OUT(1)},
+ {0, "In3\0\0\0\0\0\0", EVT_UP,   OUT(2)},
+ {0, "In3\0\0\0\0\0\0", EVT_DOWN, OUT(2)},
 };
 
 typedef struct {
@@ -148,7 +151,11 @@ typedef struct {
 } output_t;
 
 output_t output[32] = {
-{0 , ROLLO, 0, 300, "sadf"},
+{0 , ROLLO, 0, 300, "Rollo 0"},
+{0 , ROLLO, 0, 300, "Rollo 1"},
+{0 , ROLLO, 0, 300, "Rollo 2"},
+{0 , ROLLO, 0, 300, "Rollo 3"},
+{0 , ROLLO, 0, 300, "Rollo 4"},
 };
 
 // jeweils nur 6 Bit pro Byte. Wie bei der Hardware.
@@ -156,8 +163,8 @@ unsigned char inputs_new[6], inputs_debounced[6];
 
 void setEvent(event_t event_id, input_t *input);
 void readInputs(void);
-void timeManager(void);  //
-void rolloControl(void);
+void timeManager(void);
+void rolloControl(event_t event, unsigned char out_id);
 void setOutputs(void);
 void readSettingsFromEerpom(void);
 void saveSettingsInEeprom(void);
@@ -204,6 +211,7 @@ static void procInput(input_t *input,
         }
     }
 }
+
 static void wait() {
 	int i;
 	for (i = 0; i < 5; i++) {
@@ -246,14 +254,6 @@ void readInputs(void) {
 
 	 	wait();
 		PORTA &= ~P_RCK_I;
-    	//GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 1);
-    	//GPIOPinWrite(GPIO_PORTA_BASE, RCK_I, 0);
-    	/*val =  (GPIOPinRead(GPIO_PORTD_BASE, IN_H1) << 0) |
-			   (GPIOPinRead(GPIO_PORTA_BASE, IN_R1) << 1) |
-			   (GPIOPinRead(GPIO_PORTA_BASE, IN_H2) << 2) |
-			   (GPIOPinRead(GPIO_PORTA_BASE, IN_R2) << 3) |
-			   (GPIOPinRead(GPIO_PORTA_BASE, IN_H3) << 4) |
-			   (GPIOPinRead(GPIO_PORTA_BASE, IN_R3) << 5);*/
 
 		val = (((PORTD >> IN_H1) & 1) << 0) |
 			  (((PORTA >> IN_R1) & 1) << 1) |
@@ -270,7 +270,6 @@ void readInputs(void) {
 
     }	
 	// Am ende strom sparen
-	//GPIOPinWrite(GPIO_PORTB_BASE, SER, 0)
 	PORTD |= P_SCK;
 	wait();
 	PORTD &= ~P_SCK;
@@ -279,15 +278,23 @@ void readInputs(void) {
 	wait();
 	PORTA &= ~P_RCK_I;
 
-	UARTprintf("inputs_new %02x %02x %02x %02x %02x %02x\n",
-			   inputs_new[0], inputs_new[1], inputs_new[2], inputs_new[3], inputs_new[4], inputs_new[5]);
+	//UARTprintf("inputs_new %02x %02x %02x %02x %02x %02x\n",
+	//            inputs_new[0], inputs_new[1], inputs_new[2], inputs_new[3], inputs_new[4], inputs_new[5]);
 }
 
 void setEvent(event_t event, input_t *input) {
+	int i;
+	unsigned long outputs = input->outputs;
+
+	for (i = 0; i < 5; i++)  {
+		if (outputs & 1) {
+			rolloControl(event, i);
+		}
+		outputs >>= 1;
+	}
 #ifdef DEBUG
     UARTprintf("Event %d %s\n", event, input->name);
 #endif
-    
 }
 
 void setOutputs(void) {
@@ -307,15 +314,62 @@ void setOutputs(void) {
     PORTB |= P_RCK_O;
     wait();
     PORTB &= ~P_RCK_O;
-
 }
 
 void readSettingsFromEerpom(void) {
- 	// hier wird erstmal initialisiert. später eeprom
+ 	/* hier wird erstmal initialisiert.
+	 unsigned char *FlashPBGet(void);
 
+	 void FlashPBInit(unsigned long ulStart,
+	                  unsigned long ulEnd,
+	                  unsigned long ulSize);
+
+	 void FlashPBSave(unsigned char *pucBuffer);
+beispiel:
+    unsigned char pucBuffer[16], *pucPB;
+    //
+    // Initialize the flash parameter block module, using the last two pages of
+    // a 64 KB device as the parameter block.
+    //
+    FlashPBInit(0xf800, 0x10000, 16);
+    //
+    // Read the current parameter block.
+    //
+    pucPB = FlashPBGet();
+    if(pucPB)
+    {
+        memcpy(pucBuffer, pucPB);
+    }
+
+ 	*/
 }
 
-void rolloControl(void) {
+void rolloControl(event_t event, unsigned char out_id) {
+
+	output_t *output = &outputs[out_id];
+	if (output->type == ROLLO) {
+		switch (event) {
+		case EVT_DOWN:
+			break;
+
+		case EVT_UP:
+			break;
+
+		case EVT_OFF:
+			break;
+
+		case EVT_CONT:
+			break;
+
+		default:
+			break;
+		}
+	} else {
+
+	}
+}
+
+void timeManager(void) {
 
 }
 
@@ -363,8 +417,9 @@ int main(void) {
 	 	if (timeInMs > 10) {
 	 		timeInMs -= 10;
 			readInputs();
-			//rolloControl();
-			//setOutputs();
+			timeManager();
+			rolloControl(EVT_CONT, 0);
+			setOutputs();
 		}
 	}
 }

@@ -1,28 +1,28 @@
-PART=LM3S9B96
-ROOT=../../StellarisWare
-PREFIX=arm-none-eabi
-OPT   = -O0 -g
+PART   = LM3S9B96
+ROOT   = ../../StellarisWare
+PREFIX = arm-none-eabi
+OPT    = -O0 -g
 
-CC=${PREFIX}-gcc
+CC = ${PREFIX}-gcc
 
-AFLAGS=-mthumb         \
-       -mcpu=cortex-m3 \
-       -MD             \
-       -I$(ROOT)
+AFLAGS = -mthumb              \
+         -mcpu=cortex-m3      \
+         -MD                  \
+         -I$(ROOT)
 
-CFLAGS=-mthumb             \
-       -mcpu=cortex-m3     \
-       $(OPT)              \
-       -ffunction-sections \
-       -fdata-sections     \
-       -MD                \
-       -std=c99            \
-       -Wall               \
-       -pedantic           \
-       -DPART_${PART}      \
-	   -I$(ROOT)           \
-	   -DTARGET_IS_TEMPEST_RB1 \
-       -c
+CFLAGS = -mthumb             \
+         -mcpu=cortex-m3     \
+         $(OPT)              \
+         -ffunction-sections \
+         -fdata-sections     \
+         -MD                 \
+         -std=c99            \
+         -Wall               \
+         -pedantic           \
+         -DPART_${PART}      \
+	     -I$(ROOT)           \
+	     -DTARGET_IS_TEMPEST_RB1 \
+         -c
 
 AR=${PREFIX}-ar
 LD=${PREFIX}-ld
@@ -73,7 +73,7 @@ clean:
 gcc:
 	@mkdir gcc
 		
-ANIM_OBJ  = startup_gcc.o rollo.o uartstdio.o 
+ANIM_OBJ  = startup_gcc.o rollo.o uartstdio.o flash_pb.c 
 OBJ = $(patsubst %.o,gcc/%.o,$(ANIM_OBJ))
 
 gcc/${TARGET}.axf: $(OBJ)
