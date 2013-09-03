@@ -1,7 +1,7 @@
 PART   = LM3S9B96
 ROOT   = ../../StellarisWare
 PREFIX = arm-none-eabi
-OPT    = -O0 -g
+OPT    = -O2 -g
 
 CC = ${PREFIX}-gcc
 

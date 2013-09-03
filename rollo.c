@@ -121,7 +121,7 @@ typedef enum {
     DOWN_START,
     DOWN,
     STOP_START,
-    STOP
+    STOP,
 } outputState_t;
 
 typedef enum {
@@ -145,17 +145,19 @@ input_t inputs[NUM_INPUTS] = {
 typedef struct {
     outputState_t  state;
     outputType_t   type;
+    unsigned char  outUpOrOn;
+    unsigned char  outPower;
     unsigned short timer;
     unsigned short maxTime;
     char           name[20];
 } output_t;
 
 output_t output[32] = {
-{0 , ROLLO, 0, 300, "Rollo 0"},
-{0 , ROLLO, 0, 300, "Rollo 1"},
-{0 , ROLLO, 0, 300, "Rollo 2"},
-{0 , ROLLO, 0, 300, "Rollo 3"},
-{0 , ROLLO, 0, 300, "Rollo 4"},
+{STOP, ROLLO, 16, 17, 0, 500, "Rollo 0"},
+{STOP, ROLLO,  2,  3, 0, 500, "Rollo 1"},
+{STOP, ROLLO,  4,  5, 0, 500, "Rollo 2"},
+{STOP, ROLLO,  6,  7, 0, 500, "Rollo 3"},
+{STOP, ROLLO,  8,  9, 0, 500, "Rollo 4"},
 };
 
 // jeweils nur 6 Bit pro Byte. Wie bei der Hardware.
@@ -214,7 +216,7 @@ static void procInput(input_t *input,
 
 static void wait() {
 	int i;
-	for (i = 0; i < 5; i++) {
+	for (i = 0; i < 3; i++) {
 		__asm("nop");
 		__asm("nop");
 		__asm("nop");
@@ -284,13 +286,13 @@ void readInputs(void) {
 
 void setEvent(event_t event, input_t *input) {
 	int i;
-	unsigned long outputs = input->outputs;
+	unsigned long out = input->outputs;
 
 	for (i = 0; i < 5; i++)  {
-		if (outputs & 1) {
+		if (out & 1) {
 			rolloControl(event, i);
 		}
-		outputs >>= 1;
+		out >>= 1;
 	}
 #ifdef DEBUG
     UARTprintf("Event %d %s\n", event, input->name);
@@ -298,7 +300,7 @@ void setEvent(event_t event, input_t *input) {
 }
 
 void setOutputs(void) {
-    unsigned long val = outputs, i;
+    unsigned long val = ~outputs, i;
     for (i = 0; i < 32; i++) {
         if (val & 1)
         	PORTB |= P_SER;
@@ -308,7 +310,7 @@ void setOutputs(void) {
     	PORTD |= P_SCK;
     	wait();
         val >>= 1;
-        PORTD |= P_SCK;
+        PORTD &= ~P_SCK;
         wait();
     }
     PORTB |= P_RCK_O;
@@ -345,24 +347,91 @@ beispiel:
 }
 
 void rolloControl(event_t event, unsigned char out_id) {
+	output_t *out;
+	if (out_id >= 6)
+		return;
+	out = &output[out_id];
+	if (out->type == ROLLO) {
+		switch (out->state) {
+		case UP_START:
+			out->timer = out->maxTime;
+			out->state = UP;
+			outputs |=  OUT(out->outUpOrOn);
+			outputs &= ~OUT(out->outPower);
+			///UARTprintf("UP_START out %s (%d)\n", out->name, out_id);
+		case UP:
+			switch (event) {
+			case EVT_DOWN:
+				out->state = STOP_START;
+				break;
 
-	output_t *output = &outputs[out_id];
-	if (output->type == ROLLO) {
-		switch (event) {
-		case EVT_DOWN:
+			case EVT_OFF:
+				break;
+
+			case EVT_CONT:
+				// nach 500 ms Power einschalten
+				if (out->timer < out->maxTime - 50)
+					outputs |= OUT(out->outPower);
+				if (out->timer)
+					out->timer--;
+				else {
+					outputs &= ~OUT(out->outPower);
+				}
+				break;
+
+			default:
+				break;
+			}
 			break;
 
-		case EVT_UP:
+		case DOWN_START:
+			out->timer = out->maxTime;
+			out->state = DOWN;
+			outputs &= ~OUT(out->outUpOrOn);
+			outputs &= ~OUT(out->outPower);
+			//UARTprintf("DOWN_START out %s (%d)\n", out->name, out_id);
+		case DOWN:
+			switch (event) {
+			case EVT_UP:
+				out->state = STOP_START;
+				break;
+
+			case EVT_OFF:
+				break;
+
+			case EVT_CONT:
+				// nach 500 ms Power einschalten
+				if (out->timer < out->maxTime - 50)
+					outputs |= OUT(out->outPower);
+				if (out->timer)
+					out->timer--;
+				else {
+					outputs &= ~OUT(out->outPower);
+				}
+				break;
+
+			default:
+				break;
+			}
 			break;
 
-		case EVT_OFF:
+		case STOP_START:
+			outputs &= ~OUT(out->outUpOrOn);
+			outputs &= ~OUT(out->outPower);
+			out->state = STOP;
+			//UARTprintf("STOP_START out %s (%d)\n", out->name, out_id);
+		case STOP:
+			switch (event) {
+			case EVT_UP:
+				out->state = UP_START;
+				break;
+
+			case EVT_DOWN:
+				out->state = DOWN_START;
+				break;
+			}
 			break;
 
-		case EVT_CONT:
-			break;
-
-		default:
-			break;
 		}
 	} else {
 
@@ -390,7 +459,7 @@ void SysTickHandler(void) {
 }
 
 int main(void) {
-    int i = 500, mode = 0, time;
+    int i;
     ROM_SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ); // 80 MHz
     ROM_SysTickPeriodSet(80000L); // 1 ms Tick
 	ROM_SysTickEnable();
@@ -418,7 +487,9 @@ int main(void) {
 	 		timeInMs -= 10;
 			readInputs();
 			timeManager();
-			rolloControl(EVT_CONT, 0);
+			for (i = 0; i < 6; i++)
+				rolloControl(EVT_CONT, i);
+			//UARTprintf("%x\n", outputs);
 			setOutputs();
 		}
 	}
