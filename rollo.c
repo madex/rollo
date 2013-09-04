@@ -470,7 +470,6 @@ int main(void) {
     ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
     wait();
     UARTStdioInit(0);
-    //UARTprintf("\nRollocontrol v0.1 (Martin Ongsiek)\n");
 
 	ROM_GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, OUT(IN_R1) | OUT(IN_H2) | OUT(IN_R2) | OUT(IN_H3) | OUT(IN_R3));
 	ROM_GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, OUT(IN_H1));
@@ -479,7 +478,7 @@ int main(void) {
 
 	ROM_GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, P_SCK);
 	SysTickIntRegister(SysTickHandler);
-
+	UARTprintf("\nRollocontrol v0.1 (Martin Ongsiek)\n");
     readSettingsFromEerpom();
     
 	while (1) {
