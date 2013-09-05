@@ -64,7 +64,7 @@
 #define OUT(x) (1UL << x)
 
 unsigned long outputs;
-unsigned char timeInMs;
+volatile unsigned int timeInMs;
 
 
 #define P_SER   GPIO_PIN_5 // PORTB
@@ -257,12 +257,12 @@ void readInputs(void) {
 	 	wait();
 		PORTA &= ~P_RCK_I;
 
-		val = (((PORTD >> IN_H1) & 1) << 0) |
-			  (((PORTA >> IN_R1) & 1) << 1) |
-			  (((PORTA >> IN_H2) & 1) << 2) |
-			  (((PORTA >> IN_R2) & 1) << 3) |
-			  (((PORTA >> IN_H3) & 1) << 4) |
-			  (((PORTA >> IN_R3) & 1) << 5);
+		val = ~((((PORTD >> IN_H1) & 1) << 0) |
+			    (((PORTA >> IN_R1) & 1) << 1) |
+			    (((PORTA >> IN_H2) & 1) << 2) |
+			    (((PORTA >> IN_R2) & 1) << 3) |
+			    (((PORTA >> IN_H3) & 1) << 4) |
+			    (((PORTA >> IN_R3) & 1) << 5));
     	changes = val ^ inputs_new[row];
 		inputs_new[row] = val;
 		for (i = 0; i < 6; i++) {
@@ -358,11 +358,19 @@ void rolloControl(event_t event, unsigned char out_id) {
 			out->state = UP;
 			outputs |=  OUT(out->outUpOrOn);
 			outputs &= ~OUT(out->outPower);
-			///UARTprintf("UP_START out %s (%d)\n", out->name, out_id);
+			UARTprintf("UP_START out %s (%d)\n", out->name, out_id);
 		case UP:
 			switch (event) {
 			case EVT_DOWN:
-				out->state = STOP_START;
+				if (out->timer)
+					out->state = STOP_START;
+				else
+					out->state = DOWN_START;
+				break;
+
+			case EVT_UP:
+				if (!out->timer)
+					out->state = UP_START;
 				break;
 
 			case EVT_OFF:
@@ -389,11 +397,14 @@ void rolloControl(event_t event, unsigned char out_id) {
 			out->state = DOWN;
 			outputs &= ~OUT(out->outUpOrOn);
 			outputs &= ~OUT(out->outPower);
-			//UARTprintf("DOWN_START out %s (%d)\n", out->name, out_id);
+			UARTprintf("DOWN_START out %s (%d)\n", out->name, out_id);
 		case DOWN:
 			switch (event) {
 			case EVT_UP:
-				out->state = STOP_START;
+				if (out->timer)
+					out->state = STOP_START;
+				else
+					out->state = UP_START;
 				break;
 
 			case EVT_OFF:
@@ -419,7 +430,7 @@ void rolloControl(event_t event, unsigned char out_id) {
 			outputs &= ~OUT(out->outUpOrOn);
 			outputs &= ~OUT(out->outPower);
 			out->state = STOP;
-			//UARTprintf("STOP_START out %s (%d)\n", out->name, out_id);
+			UARTprintf("STOP_START out %s (%d)\n", out->name, out_id);
 		case STOP:
 			switch (event) {
 			case EVT_UP:
@@ -455,7 +466,7 @@ __error__(char *pcFilename, unsigned long ulLine) {
 
 
 void SysTickHandler(void) {
-	timeInMs--;
+	timeInMs++;
 }
 
 int main(void) {
@@ -466,17 +477,17 @@ int main(void) {
 	ROM_SysTickIntEnable();
 	ROM_IntMasterEnable();
     // Initialize the UART.
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA | SYSCTL_PERIPH_GPIOB | SYSCTL_PERIPH_GPIOD);
-    ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA | SYSCTL_PERIPH_GPIOB | SYSCTL_PERIPH_GPIOD);
+    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
     wait();
     UARTStdioInit(0);
 
-	ROM_GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, OUT(IN_R1) | OUT(IN_H2) | OUT(IN_R2) | OUT(IN_H3) | OUT(IN_R3));
-	ROM_GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, OUT(IN_H1));
-	ROM_GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, P_RCK_I);
-	ROM_GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, P_SER | P_RCK_O);
+	GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, OUT(IN_R1) | OUT(IN_H2) | OUT(IN_R2) | OUT(IN_H3) | OUT(IN_R3));
+	GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, OUT(IN_H1));
+	GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, P_RCK_I);
+	GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, P_SER | P_RCK_O);
 
-	ROM_GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, P_SCK);
+	GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, P_SCK);
 	SysTickIntRegister(SysTickHandler);
 	UARTprintf("\nRollocontrol v0.1 (Martin Ongsiek)\n");
     readSettingsFromEerpom();
