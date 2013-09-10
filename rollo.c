@@ -51,6 +51,8 @@
 #include <utils/uartstdio.h>
 #include <utils/flash_pb.h>
 
+#define SWITCH_TIME 30 // *10ms
+
 //#undef DEBUG
 //#define DEBUG
 #define NUM_INPUTS 32
@@ -92,7 +94,7 @@ typedef enum {
 // A
 typedef struct {
 	unsigned short timer;
-	char           name[10];
+	char           name[30];
 	event_t        event;
     unsigned long  outputs;
 } input_t;
@@ -132,14 +134,30 @@ typedef enum {
 
 // Speicher für die Eingänge.
 input_t inputs[NUM_INPUTS] = {
- {0, "In0\0\0\0\0\0\0", EVT_UP,   OUT(0)},
- {0, "In0\0\0\0\0\0\0", EVT_DOWN, OUT(0)},
- {0, "In1\0\0\0\0\0\0", EVT_UP,   OUT(1)},
- {0, "In1\0\0\0\0\0\0", EVT_DOWN, OUT(1)},
- {0, "In2\0\0\0\0\0\0", EVT_UP,   OUT(0) | OUT(1)},
- {0, "In2\0\0\0\0\0\0", EVT_DOWN, OUT(0) | OUT(1)},
- {0, "In3\0\0\0\0\0\0", EVT_UP,   OUT(2)},
- {0, "In3\0\0\0\0\0\0", EVT_DOWN, OUT(2)},
+ {0, "Wohnzimmmer rechts", EVT_UP,   OUT(0)},
+ {0, "Wohnzimmmer rechts", EVT_DOWN, OUT(0)},
+ {0, "Wohnzimmmer links",  EVT_UP,   OUT(1)},
+ {0, "Wohnzimmmer links",  EVT_DOWN, OUT(1)},
+ {0, "Kueche Tuer",        EVT_UP,   OUT(2)},
+ {0, "Kueche Tuer",        EVT_DOWN, OUT(2)},
+ {0, "Kueche Fenster",     EVT_UP,   OUT(3)},
+ {0, "Kueche Fenster",     EVT_DOWN, OUT(3)},
+ {0, "Gaeste WC",          EVT_UP,   OUT(4)},
+ {0, "Gaeste WC",          EVT_DOWN, OUT(4)},
+
+ {0, "Eltern",             EVT_UP,   OUT(5)},
+ {0, "Eltern",             EVT_DOWN, OUT(5)},
+ {0, "Kind links",         EVT_UP,   OUT(6)},
+ {0, "Kind links",         EVT_DOWN, OUT(6)},
+
+ {0, "Kind rechts",        EVT_UP,   OUT(7)},
+ {0, "Kind rechts",        EVT_DOWN, OUT(7)},
+
+ {0, "Bad",                EVT_UP,   OUT(8)},
+ {0, "Bad",                EVT_DOWN, OUT(8)},
+
+ {0, "Alle",               EVT_UP,   0x0000001f},
+ {0, "Alle",               EVT_DOWN, 0x0000001f},
 };
 
 typedef struct {
@@ -147,17 +165,17 @@ typedef struct {
     outputType_t   type;
     unsigned char  outUpOrOn;
     unsigned char  outPower;
-    unsigned short timer;
-    unsigned short maxTime;
+    unsigned long  timer;
+    unsigned long  maxTime;
     char           name[20];
 } output_t;
 
 output_t output[32] = {
-{STOP, ROLLO, 16, 17, 0, 500, "Rollo 0"},
-{STOP, ROLLO,  2,  3, 0, 500, "Rollo 1"},
-{STOP, ROLLO,  4,  5, 0, 500, "Rollo 2"},
-{STOP, ROLLO,  6,  7, 0, 500, "Rollo 3"},
-{STOP, ROLLO,  8,  9, 0, 500, "Rollo 4"},
+{STOP, ROLLO, 16, 17, 0, 1500, "Rollo 0"},
+{STOP, ROLLO,  2,  3, 0, 1500, "Rollo 1"},
+{STOP, ROLLO,  4,  5, 0, 1500, "Rollo 2"},
+{STOP, ROLLO,  6,  7, 0, 1500, "Rollo 3"},
+{STOP, ROLLO,  8,  9, 0, 1500, "Rollo 4"},
 };
 
 // jeweils nur 6 Bit pro Byte. Wie bei der Hardware.
@@ -354,7 +372,7 @@ void rolloControl(event_t event, unsigned char out_id) {
 	if (out->type == ROLLO) {
 		switch (out->state) {
 		case UP_START:
-			out->timer = out->maxTime;
+			out->timer = out->maxTime + SWITCH_TIME;
 			out->state = UP;
 			outputs |=  OUT(out->outUpOrOn);
 			outputs &= ~OUT(out->outPower);
@@ -378,12 +396,13 @@ void rolloControl(event_t event, unsigned char out_id) {
 
 			case EVT_CONT:
 				// nach 500 ms Power einschalten
-				if (out->timer < out->maxTime - 50)
+				if (out->timer < out->maxTime)
 					outputs |= OUT(out->outPower);
 				if (out->timer)
 					out->timer--;
 				else {
 					outputs &= ~OUT(out->outPower);
+					outputs &= ~OUT(out->outUpOrOn);
 				}
 				break;
 
@@ -393,7 +412,7 @@ void rolloControl(event_t event, unsigned char out_id) {
 			break;
 
 		case DOWN_START:
-			out->timer = out->maxTime;
+			out->timer = out->maxTime + SWITCH_TIME;
 			out->state = DOWN;
 			outputs &= ~OUT(out->outUpOrOn);
 			outputs &= ~OUT(out->outPower);
@@ -412,7 +431,7 @@ void rolloControl(event_t event, unsigned char out_id) {
 
 			case EVT_CONT:
 				// nach 500 ms Power einschalten
-				if (out->timer < out->maxTime - 50)
+				if (out->timer < out->maxTime)
 					outputs |= OUT(out->outPower);
 				if (out->timer)
 					out->timer--;
@@ -467,6 +486,11 @@ __error__(char *pcFilename, unsigned long ulLine) {
 
 void SysTickHandler(void) {
 	timeInMs++;
+	/*if (timeInMs & 1)
+		PORTD |= OUT(3);
+	else
+		PORTD &= ~OUT(3);
+	*/
 }
 
 int main(void) {
@@ -487,7 +511,7 @@ int main(void) {
 	GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, P_RCK_I);
 	GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, P_SER | P_RCK_O);
 
-	GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, P_SCK);
+	GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, P_SCK | OUT(3));
 	SysTickIntRegister(SysTickHandler);
 	UARTprintf("\nRollocontrol v0.1 (Martin Ongsiek)\n");
     readSettingsFromEerpom();
