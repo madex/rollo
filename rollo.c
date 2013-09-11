@@ -55,19 +55,23 @@
 
 //#undef DEBUG
 //#define DEBUG
-#define NUM_INPUTS 32
-#define NUM_GROUPS 16
+#define NUM_INPUTS    32
+#define NUM_OUTPUTS   10
+#define NUM_GROUPS    16
 #define DEBOUNCE_TIME 10
 
 #define PORTA GPIO_PORTA_DATA_R
 #define PORTB GPIO_PORTB_DATA_R
 #define PORTD GPIO_PORTD_DATA_R
 
-#define OUT(x) (1UL << x)
-
-unsigned long outputs;
+#define OUT(x)    (1UL << x)
+#define OUT_ALLE  (OUT(0) | OUT(1) | OUT(2) | OUT(3) | OUT(4) | OUT(5) | OUT(6) | OUT(7) | OUT(8) | OUT(9)) 
+#define SET_TIME(hour, minute)   (hour*60*60 + minute*60)
+volatile unsigned long secoundsOfDay;
+volatile unsigned char ticks;
 volatile unsigned int timeInMs;
-
+volatile unsigned char weekDay; // 0 montag 1 dienstag
+unsigned long outputs;
 
 #define P_SER   GPIO_PIN_5 // PORTB
 #define P_RCK_O GPIO_PIN_6 // PORTB
@@ -99,14 +103,33 @@ typedef struct {
     unsigned long  outputs;
 } input_t;
 
+#define MO (1 << 0)
+#define DI (1 << 1)
+#define MI (1 << 2)
+#define DO (1 << 3)
+#define FR (1 << 4)
+#define SA (1 << 5)
+#define SO (1 << 6)
+
+#define MO_FR    MO | DI | MI | DO| FR
+#define WE       SA | SO
 // C
 typedef struct {
-	unsigned char days;           // bit 7 mon bit 6 die ... 1 son
-	unsigned char hour, min;
-	unsigned long outputs;
+	unsigned char days;           // bit 0 mon bit 1 die ... 6 son
+	unsigned char secOfDay;
 	event_t       event;
+	unsigned long outputs;
+    char          name[30];
 } time_t;
 
+time_t timeEvents[] = {
+{WE,    SET_TIME( 9, 0), EVT_UP,   OUT_ALLE, "WE Hoch"},
+{WE,    SET_TIME(20, 0), EVT_DOWN, OUT_ALLE, "WE Runter"},
+{MO_FR, SET_TIME( 8, 0), EVT_UP,   OUT_ALLE, "Wochentags Hoch"},
+{MO_FR, SET_TIME(21, 0), EVT_DOWN, OUT_ALLE, "Wochentags Runter"},
+}
+
+/*
 // C
 typedef struct {
 	unsigned char days;           // bit 7 mon bit 6 die ... 1 son
@@ -115,7 +138,7 @@ typedef struct {
 	unsigned long outputs;
 	event_t       event;          // event
 } smart_time_t;
-
+*/
 
 typedef enum {
     UP_START,
@@ -131,33 +154,30 @@ typedef enum {
     OUTPUT   // ON und OFF
 } outputType_t;
 
-
 // Speicher für die Eingänge.
 input_t inputs[NUM_INPUTS] = {
- {0, "Wohnzimmmer rechts", EVT_UP,   OUT(0)},
- {0, "Wohnzimmmer rechts", EVT_DOWN, OUT(0)},
- {0, "Wohnzimmmer links",  EVT_UP,   OUT(1)},
- {0, "Wohnzimmmer links",  EVT_DOWN, OUT(1)},
- {0, "Kueche Tuer",        EVT_UP,   OUT(2)},
- {0, "Kueche Tuer",        EVT_DOWN, OUT(2)},
- {0, "Kueche Fenster",     EVT_UP,   OUT(3)},
- {0, "Kueche Fenster",     EVT_DOWN, OUT(3)},
- {0, "Gaeste WC",          EVT_UP,   OUT(4)},
- {0, "Gaeste WC",          EVT_DOWN, OUT(4)},
-
- {0, "Eltern",             EVT_UP,   OUT(5)},
- {0, "Eltern",             EVT_DOWN, OUT(5)},
- {0, "Kind links",         EVT_UP,   OUT(6)},
- {0, "Kind links",         EVT_DOWN, OUT(6)},
-
- {0, "Kind rechts",        EVT_UP,   OUT(7)},
- {0, "Kind rechts",        EVT_DOWN, OUT(7)},
-
- {0, "Bad",                EVT_UP,   OUT(8)},
- {0, "Bad",                EVT_DOWN, OUT(8)},
-
- {0, "Alle",               EVT_UP,   0x0000001f},
- {0, "Alle",               EVT_DOWN, 0x0000001f},
+ {0, "Wohnzimmmer rechts", EVT_UP,    OUT(0)},
+ {0, "Wohnzimmmer rechts", EVT_DOWN,  OUT(0)},
+ {0, "Wohnzimmmer links",  EVT_UP,    OUT(1)},
+ {0, "Wohnzimmmer links",  EVT_DOWN,  OUT(1)},
+ {0, "Kueche Tuer",        EVT_UP,    OUT(2)},
+ {0, "Kueche Tuer",        EVT_DOWN,  OUT(2)},
+ {0, "Kueche Fenster",     EVT_UP,    OUT(3)},
+ {0, "Kueche Fenster",     EVT_DOWN,  OUT(3)},
+ {0, "Gaeste WC",          EVT_UP,    OUT(4)},
+ {0, "Gaeste WC",          EVT_DOWN,  OUT(4)},
+ {0, "Technik",            EVT_UP,    OUT(5)},
+ {0, "Technik",            EVT_DOWN,  OUT(5)},
+ {0, "Eltern",             EVT_UP,    OUT(6)},
+ {0, "Eltern",             EVT_DOWN,  OUT(6)},
+ {0, "Kind links",         EVT_UP,    OUT(7)},
+ {0, "Kind links",         EVT_DOWN,  OUT(7)},
+ {0, "Kind rechts",        EVT_UP,    OUT(8)},
+ {0, "Kind rechts",        EVT_DOWN,  OUT(8)},
+ {0, "Bad",                EVT_UP,    OUT(9)},
+ {0, "Bad",                EVT_DOWN,  OUT(9)},
+ {0, "Alle",               EVT_UP,    OUT_ALLE},
+ {0, "Alle",               EVT_DOWN,  OUT_ALLE},
 };
 
 typedef struct {
@@ -170,18 +190,23 @@ typedef struct {
     char           name[20];
 } output_t;
 
-output_t output[32] = {
-{STOP, ROLLO, 16, 17, 0, 1500, "Rollo 0"},
-{STOP, ROLLO,  2,  3, 0, 1500, "Rollo 1"},
-{STOP, ROLLO,  4,  5, 0, 1500, "Rollo 2"},
-{STOP, ROLLO,  6,  7, 0, 1500, "Rollo 3"},
-{STOP, ROLLO,  8,  9, 0, 1500, "Rollo 4"},
+output_t output[NUM_OUTPUTS] = {
+{STOP, ROLLO,  0,  1, 0, 1500, "Wohnzimmmer rechts"},
+{STOP, ROLLO,  2,  3, 0, 1500, "Wohnzimmmer links"},
+{STOP, ROLLO,  4,  5, 0, 1500, "Kueche Tuer"},
+{STOP, ROLLO,  6,  7, 0, 1500, "Kueche Fenster"},
+{STOP, ROLLO,  8,  9, 0, 1500, "Gaeste WC"},
+{STOP, ROLLO, 10, 11, 0, 1500, "Technik"},
+{STOP, ROLLO, 12, 13, 0, 1500, "Eltern"},
+{STOP, ROLLO, 14, 15, 0, 1500, "Kind links"},
+{STOP, ROLLO, 16, 17, 0, 1500, "Kind rechts",},
+{STOP, ROLLO, 18, 19, 0, 1500, "Bad"},
 };
 
 // jeweils nur 6 Bit pro Byte. Wie bei der Hardware.
 unsigned char inputs_new[6], inputs_debounced[6];
 
-void setEvent(event_t event_id, input_t *input);
+void setEvent(event_t event, unsigned long outputs, char *name);
 void readInputs(void);
 void timeManager(void);
 void rolloControl(event_t event, unsigned char out_id);
@@ -190,8 +215,8 @@ void readSettingsFromEerpom(void);
 void saveSettingsInEeprom(void);
 
 static inline unsigned char GetBit(unsigned char bitfield, unsigned char bit) {
-    if (bit < 8)                             // Sicherheitsabgrabe
-        return (bitfield >> bit) & 1;        // Wert des Bittes zur¸ckgeben.
+    if (bit < 8)        
+        return (bitfield >> bit) & 1;
     else
         return 0;
 }
@@ -221,13 +246,13 @@ static void procInput(input_t *input,
         if (!GetBit(*inputs_debounced, bit) && // aber enptrellter Eingang inaktiv
             input->timer == 0) {               // und Entprelltimer abgelaufen
             *inputs_debounced |= (1 << bit);
-            setEvent(EVT_OFF, input);
+            setEvent(EVT_OFF, input->outputs, input->name);
         }
     } else { // aktueller Eingang aktiv
         if (GetBit(*inputs_debounced, bit) &&  // aber enptrellter Eingang aktiv
             input->timer == 0) {               // und Entprelltimer abgelaufen
             *inputs_debounced &= ~(1 << bit);
-            setEvent(input->event, input);
+            setEvent(input->event, input->outputs, input->name);
         }
     }
 }
@@ -302,18 +327,17 @@ void readInputs(void) {
 	//            inputs_new[0], inputs_new[1], inputs_new[2], inputs_new[3], inputs_new[4], inputs_new[5]);
 }
 
-void setEvent(event_t event, input_t *input) {
+void setEvent(event_t event, unsigned long outputs, char *name) {
 	int i;
-	unsigned long out = input->outputs;
 
-	for (i = 0; i < 5; i++)  {
-		if (out & 1) {
+	for (i = 0; i < NUM_OUTPUTS; i++)  {
+		if (outputs & 1) {
 			rolloControl(event, i);
 		}
-		out >>= 1;
+		outputs >>= 1;
 	}
 #ifdef DEBUG
-    UARTprintf("Event %d %s\n", event, input->name);
+    UARTprintf("Event %d %s\n", event, name);
 #endif
 }
 
@@ -334,6 +358,13 @@ void setOutputs(void) {
     PORTB |= P_RCK_O;
     wait();
     PORTB &= ~P_RCK_O;
+}
+
+void setTime(unsigned char hour, unsigned char min, unsigned char day) {
+    if (hour > 23 || min > 59 || day > 6)
+        return;
+    secoundsOfDay = SET_TIME(hour, min);
+    dayOfWeek     = day;
 }
 
 void readSettingsFromEerpom(void) {
@@ -395,7 +426,7 @@ void rolloControl(event_t event, unsigned char out_id) {
 				break;
 
 			case EVT_CONT:
-				// nach 500 ms Power einschalten
+				// verzögert Power einschalten
 				if (out->timer < out->maxTime)
 					outputs |= OUT(out->outPower);
 				if (out->timer)
@@ -430,7 +461,7 @@ void rolloControl(event_t event, unsigned char out_id) {
 				break;
 
 			case EVT_CONT:
-				// nach 500 ms Power einschalten
+				// verzögert Power einschalten
 				if (out->timer < out->maxTime)
 					outputs |= OUT(out->outPower);
 				if (out->timer)
@@ -469,7 +500,17 @@ void rolloControl(event_t event, unsigned char out_id) {
 }
 
 void timeManager(void) {
-
+    static unsigned long sod_old = 0xffffffff;
+    unsigned char i;
+    if (secoundsOfDay != sod_old) {
+       sod_old = secoundsOfDay;
+       for (i = 0; i < 4; i++) {
+            if (((1 << dayOfWeek) | timeEvents[i].days) && 
+                secoundsOfDay == timeEvents[i].secOfDay) {
+                setEvent(timeEvents[i].event, timeEvents[i].outputs, timeEvents[i].name);
+            }
+       }
+    }
 }
 
 void saveSettingsInEeprom(void) {
@@ -477,20 +518,24 @@ void saveSettingsInEeprom(void) {
 }
 
 #ifdef DEBUG
-void
-__error__(char *pcFilename, unsigned long ulLine) {
+void __error__(char *pcFilename, unsigned long ulLine) {
         UARTprintf("ERROR: %s:%d\n", pcFilename, ulLine);
 }
 #endif
 
-
 void SysTickHandler(void) {
 	timeInMs++;
-	/*if (timeInMs & 1)
-		PORTD |= OUT(3);
-	else
-		PORTD &= ~OUT(3);
-	*/
+    ticks++;
+	if (timeInMs == 1000) {
+   		timeInMs = 0;
+		secoundsOfDay++; 
+   }
+   if (secoundsOfDay == 60*60*24) {
+       secoundsOfDay = 0;
+       weekDay++;
+       if (weekDay == 7)
+           weekDay = 0; 
+   }   
 }
 
 int main(void) {
@@ -517,11 +562,11 @@ int main(void) {
     readSettingsFromEerpom();
     
 	while (1) {
-	 	if (timeInMs > 10) {
-	 		timeInMs -= 10;
+	 	if (ticks >= 10) {
+	 		ticks -= 10;
 			readInputs();
 			timeManager();
-			for (i = 0; i < 6; i++)
+			for (i = 0; i < NUM_OUTPUTS; i++)
 				rolloControl(EVT_CONT, i);
 			//UARTprintf("%x\n", outputs);
 			setOutputs();
