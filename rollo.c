@@ -67,6 +67,7 @@
 #define OUT(x)    (1UL << x)
 #define OUT_ALLE  (OUT(0) | OUT(1) | OUT(2) | OUT(3) | OUT(4) | OUT(5) | OUT(6) | OUT(7) | OUT(8) | OUT(9)) 
 #define SET_TIME(hour, minute)   (hour*60*60 + minute*60)
+
 volatile unsigned long secoundsOfDay;
 volatile unsigned char ticks;
 volatile unsigned int timeInMs;
@@ -116,18 +117,18 @@ typedef struct {
 // C
 typedef struct {
 	unsigned char days;           // bit 0 mon bit 1 die ... 6 son
-	unsigned char secOfDay;
+	unsigned long secOfDay;
 	event_t       event;
 	unsigned long outputs;
     char          name[30];
 } time_t;
 
-time_t timeEvents[] = {
+time_t timeEvents[4] = {
 {WE,    SET_TIME( 9, 0), EVT_UP,   OUT_ALLE, "WE Hoch"},
 {WE,    SET_TIME(20, 0), EVT_DOWN, OUT_ALLE, "WE Runter"},
 {MO_FR, SET_TIME( 8, 0), EVT_UP,   OUT_ALLE, "Wochentags Hoch"},
 {MO_FR, SET_TIME(21, 0), EVT_DOWN, OUT_ALLE, "Wochentags Runter"},
-}
+};
 
 /*
 // C
@@ -364,7 +365,7 @@ void setTime(unsigned char hour, unsigned char min, unsigned char day) {
     if (hour > 23 || min > 59 || day > 6)
         return;
     secoundsOfDay = SET_TIME(hour, min);
-    dayOfWeek     = day;
+    weekDay       = day;
 }
 
 void readSettingsFromEerpom(void) {
@@ -505,7 +506,7 @@ void timeManager(void) {
     if (secoundsOfDay != sod_old) {
        sod_old = secoundsOfDay;
        for (i = 0; i < 4; i++) {
-            if (((1 << dayOfWeek) | timeEvents[i].days) && 
+            if (((1 << weekDay) | timeEvents[i].days) &&
                 secoundsOfDay == timeEvents[i].secOfDay) {
                 setEvent(timeEvents[i].event, timeEvents[i].outputs, timeEvents[i].name);
             }
