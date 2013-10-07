@@ -22,6 +22,7 @@ CFLAGS = -mthumb             \
          -DPART_${PART}      \
 	     -I$(ROOT)           \
 	     -DTARGET_IS_TEMPEST_RB1 \
+	     -DUART_BUFFERED \
          -c
 
 AR=${PREFIX}-ar

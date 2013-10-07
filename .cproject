@@ -27,6 +27,9 @@
 								<option id="gnu.c.compiler.option.include.paths.1380126939" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/Users/madex/Develop/StellarisWare"/>
 								</option>
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.2084589492" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="UART_BUFFERED"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1881829002" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.2064454015" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">

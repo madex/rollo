@@ -57,7 +57,7 @@
 //#define DEBUG
 #define NUM_INPUTS    32
 #define NUM_OUTPUTS   10
-#define NUM_GROUPS    16
+#define NUM_TIMERS     4
 #define DEBOUNCE_TIME 10
 
 #define PORTA GPIO_PORTA_DATA_R
@@ -68,7 +68,7 @@
 #define OUT_ALLE  (OUT(0) | OUT(1) | OUT(2) | OUT(3) | OUT(4) | OUT(5) | OUT(6) | OUT(7) | OUT(8) | OUT(9)) 
 #define SET_TIME(hour, minute)   (hour*60*60 + minute*60)
 
-volatile unsigned long secoundsOfDay;
+volatile int secoundsOfDay;
 volatile unsigned char ticks;
 volatile unsigned int timeInMs;
 volatile unsigned char weekDay; // 0 montag 1 dienstag
@@ -123,7 +123,7 @@ typedef struct {
     char          name[30];
 } time_t;
 
-time_t timeEvents[4] = {
+time_t timeEvents[NUM_TIMERS] = {
 {WE,    SET_TIME( 9, 0), EVT_UP,   OUT_ALLE, "WE Hoch"},
 {WE,    SET_TIME(20, 0), EVT_DOWN, OUT_ALLE, "WE Runter"},
 {MO_FR, SET_TIME( 8, 0), EVT_UP,   OUT_ALLE, "Wochentags Hoch"},
@@ -516,8 +516,8 @@ void timeManager(void) {
     unsigned char i;
     if (secoundsOfDay != sod_old) {
        sod_old = secoundsOfDay;
-       for (i = 0; i < 4; i++) {
-            if (((1 << weekDay) | timeEvents[i].days) &&
+       for (i = 0; i < NUM_TIMERS; i++) {
+            if (((1 << weekDay) & timeEvents[i].days) &&
                 secoundsOfDay == timeEvents[i].secOfDay) {
                 setEvent(timeEvents[i].event, timeEvents[i].outputs, timeEvents[i].name);
             }
@@ -542,12 +542,82 @@ void SysTickHandler(void) {
    		timeInMs = 0;
 		secoundsOfDay++; 
    }
-   if (secoundsOfDay == 60*60*24) {
+   if (secoundsOfDay < 0) {
+	   secoundsOfDay += 60*60*24;
+	   weekDay++;
+	   if (weekDay >= 7)
+		   weekDay = 6;
+   } else if (secoundsOfDay >= 60*60*24) {
        secoundsOfDay = 0;
        weekDay++;
        if (weekDay == 7)
            weekDay = 0; 
    }   
+}
+
+void printTime(void) {
+	int hour = secoundsOfDay / (60*60);
+	int min = (secoundsOfDay - (hour*60*60)) / 60;
+	UARTprintf("Time: %02d:%02x:02d ", hour, min, secoundsOfDay % 60);
+	switch (weekDay) {
+	case MO:
+		UARTprintf("Montag\n");
+		break;
+	case DI:
+		UARTprintf("Dienstag\n");
+		break;
+	case MI:
+		UARTprintf("Mittwoch\n");
+		break;
+	case DO:
+		UARTprintf("Donnerstag\n");
+		break;
+	case FR:
+		UARTprintf("Freitag\n");
+		break;
+	case SA:
+		UARTprintf("Samstag\n");
+		break;
+	case SO:
+		UARTprintf("Sonntag\n");
+		break;
+	}
+}
+
+void serialControl(void) {
+	while (UARTRxBytesAvail()) {
+		switch (UARTgetc()) {
+		case 'm':
+			secoundsOfDay += 60;
+			printTime();
+			break;
+
+		case 'M':
+			secoundsOfDay -= 60;
+			printTime();
+			break;
+
+		case 'h':
+			secoundsOfDay += 60*60;
+			printTime();
+			break;
+
+		case 'H':
+			secoundsOfDay -= 60*60;
+			printTime();
+			break;
+
+		case 'd':
+			weekDay++;
+			if (weekDay >= 7)
+				weekDay = 0;
+			break;
+
+		case 't':
+			printTime();
+			break;
+		}
+	}
 }
 
 int main(void) {
@@ -589,6 +659,7 @@ int main(void) {
 				rolloControl(EVT_CONT, i);
 			//UARTprintf("%x\n", outputs);
 			setOutputs();
+			serialControl();
 		}
 	}
 }
