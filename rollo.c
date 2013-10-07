@@ -157,28 +157,28 @@ typedef enum {
 
 // Speicher für die Eingänge.
 input_t inputs[NUM_INPUTS] = {
- {0, "Wohnzimmmer rechts", EVT_UP,    OUT(0)},
  {0, "Wohnzimmmer rechts", EVT_DOWN,  OUT(0)},
- {0, "Wohnzimmmer links",  EVT_UP,    OUT(4)},
+ {0, "Wohnzimmmer rechts", EVT_UP,    OUT(0)},
  {0, "Wohnzimmmer links",  EVT_DOWN,  OUT(4)},
- {0, "Kueche Tuer",        EVT_UP,    OUT(5)},
+ {0, "Wohnzimmmer links",  EVT_UP,    OUT(4)},
  {0, "Kueche Tuer",        EVT_DOWN,  OUT(5)},
- {0, "Kueche Fenster",     EVT_UP,    OUT(2)},
+ {0, "Kueche Tuer",        EVT_UP,    OUT(5)},
  {0, "Kueche Fenster",     EVT_DOWN,  OUT(2)},
- {0, "Gaeste WC",          EVT_UP,    OUT(1)},
+ {0, "Kueche Fenster",     EVT_UP,    OUT(2)},
  {0, "Gaeste WC",          EVT_DOWN,  OUT(1)},
- {0, "Technik",            EVT_UP,    OUT(3)},
+ {0, "Gaeste WC",          EVT_UP,    OUT(1)},
  {0, "Technik",            EVT_DOWN,  OUT(3)},
- {0, "Eltern",             EVT_UP,    OUT(6)},
+ {0, "Technik",            EVT_UP,    OUT(3)},
  {0, "Eltern",             EVT_DOWN,  OUT(6)},
- {0, "Kind rechts",        EVT_UP,    OUT(7)},
+ {0, "Eltern",             EVT_UP,    OUT(6)},
  {0, "Kind rechts",        EVT_DOWN,  OUT(7)},
- {0, "Kind links",         EVT_UP,    OUT(8)},
+ {0, "Kind rechts",        EVT_UP,    OUT(7)},
  {0, "Kind links",         EVT_DOWN,  OUT(8)},
- {0, "Bad",                EVT_UP,    OUT(9)},
+ {0, "Kind links",         EVT_UP,    OUT(8)},
  {0, "Bad",                EVT_DOWN,  OUT(9)},
- {0, "Alle",               EVT_UP,    OUT_ALLE},
+ {0, "Bad",                EVT_UP,    OUT(9)},
  {0, "Alle",               EVT_DOWN,  OUT_ALLE},
+ {0, "Alle",               EVT_UP,    OUT_ALLE},
 };
 
 typedef struct {
@@ -192,16 +192,16 @@ typedef struct {
 } output_t;
 
 output_t output[NUM_OUTPUTS] = {
-{STOP, ROLLO,  0,  1, 0, 1500, "Wohnzimmmer rechts"},
-{STOP, ROLLO,  2,  3, 0, 1500, "Gaeste WC"},
-{STOP, ROLLO,  4,  5, 0, 1500, "Kueche Fenster"},
-{STOP, ROLLO,  6,  7, 0, 1500, "Technik"},
-{STOP, ROLLO,  8,  9, 0, 1500, "Wohnzimmmer links"},
-{STOP, ROLLO, 10, 11, 0, 1500, "Kueche Tuer"},
-{STOP, ROLLO, 12, 13, 0, 1500, "Eltern"},
-{STOP, ROLLO, 14, 15, 0, 1500, "Kind rechts",},
-{STOP, ROLLO, 16, 17, 0, 1500, "Kind links"},
-{STOP, ROLLO, 18, 19, 0, 1500, "Bad"},
+{STOP, ROLLO, 15, 14, 0, 3500, "Wohnzimmmer rechts"},
+{STOP, ROLLO, 19, 18, 0, 2500, "Gaeste WC"},
+{STOP, ROLLO, 21, 20, 0, 2500, "Kueche Fenster"},
+{STOP, ROLLO,  9,  8, 0, 2500, "Technik"},
+{STOP, ROLLO,  1,  0, 0, 3500, "Wohnzimmmer links"},
+{STOP, ROLLO,  3,  2, 0, 3500, "Kueche Tuer"},
+{STOP, ROLLO,  7,  6, 0, 2500, "Eltern"},
+{STOP, ROLLO, 31, 30, 0, 2500, "Kind rechts",},
+{STOP, ROLLO, 27, 26, 0, 2500, "Kind links"},
+{STOP, ROLLO, 29, 28, 0, 2500, "Bad"},
 };
 
 // jeweils nur 6 Bit pro Byte. Wie bei der Hardware.
@@ -260,7 +260,12 @@ static void procInput(input_t *input,
 
 static void wait() {
 	int i;
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < 10; i++) {
+		__asm("nop");
+		__asm("nop");
+		__asm("nop");
+		__asm("nop");
+		__asm("nop");
 		__asm("nop");
 		__asm("nop");
 		__asm("nop");
@@ -299,7 +304,12 @@ void readInputs(void) {
 		PORTB &= ~P_SER;
 
 	 	wait();
-		PORTA &= ~P_RCK_I;
+
+	 	PORTA &= ~P_RCK_I;
+	 	wait();
+	 	wait();
+	 	wait();
+	 	wait();
 
 		val = ~((((PORTD >> IN_H1) & 1) << 0) |
 			    (((PORTA >> IN_R1) & 1) << 1) |
@@ -344,6 +354,7 @@ void setEvent(event_t event, unsigned long outputs, char *name) {
 
 void setOutputs(void) {
     unsigned long val = ~outputs, i;
+    wait();
     for (i = 0; i < 32; i++) {
         if (val & 1)
         	PORTB |= P_SER;
@@ -398,7 +409,7 @@ beispiel:
 
 void rolloControl(event_t event, unsigned char out_id) {
 	output_t *out;
-	if (out_id >= 6)
+	if (out_id >= NUM_OUTPUTS)
 		return;
 	out = &output[out_id];
 	if (out->type == ROLLO) {
@@ -408,7 +419,7 @@ void rolloControl(event_t event, unsigned char out_id) {
 			out->state = UP;
 			outputs |=  OUT(out->outUpOrOn);
 			outputs &= ~OUT(out->outPower);
-			UARTprintf("UP_START out %s (%d)\n", out->name, out_id);
+			UARTprintf("UP_START out %s (%d) pwr=%d up=%d\n", out->name, out_id, out->outUpOrOn, out->outPower);
 		case UP:
 			switch (event) {
 			case EVT_DOWN:
@@ -448,7 +459,7 @@ void rolloControl(event_t event, unsigned char out_id) {
 			out->state = DOWN;
 			outputs &= ~OUT(out->outUpOrOn);
 			outputs &= ~OUT(out->outPower);
-			UARTprintf("DOWN_START out %s (%d)\n", out->name, out_id);
+			UARTprintf("DOWN_START out %s (%d) pwr=%d up=%d\n", out->name, out_id, out->outUpOrOn, out->outPower);
 		case DOWN:
 			switch (event) {
 			case EVT_UP:
@@ -561,7 +572,14 @@ int main(void) {
 	SysTickIntRegister(SysTickHandler);
 	UARTprintf("\nRollocontrol v0.1 (Martin Ongsiek)\n");
     readSettingsFromEerpom();
-    
+    for (i = 0; i < 32; i++) {
+    	while (ticks < 250);
+		ticks = 0;
+		outputs = OUT(i);
+		setOutputs();
+
+    }
+    outputs = 0;
 	while (1) {
 	 	if (ticks >= 10) {
 	 		ticks -= 10;
