@@ -58,7 +58,7 @@
 #define NUM_INPUTS    32
 #define NUM_OUTPUTS   10
 #define NUM_TIMERS     4
-#define DEBOUNCE_TIME 10
+#define DEBOUNCE_TIME  5
 
 #define PORTA GPIO_PORTA_DATA_R
 #define PORTB GPIO_PORTB_DATA_R
@@ -67,6 +67,8 @@
 #define OUT(x)    (1UL << x)
 #define OUT_ALLE  (OUT(0) | OUT(1) | OUT(2) | OUT(3) | OUT(4) | OUT(5) | OUT(6) | OUT(7) | OUT(8) | OUT(9)) 
 #define SET_TIME(hour, minute)   (hour*60*60 + minute*60)
+
+#define REDUCE_RELAY_TRAFIC
 
 volatile int secoundsOfDay;
 volatile unsigned char ticks;
@@ -187,21 +189,22 @@ typedef struct {
     unsigned char  outUpOrOn;
     unsigned char  outPower;
     unsigned long  timer;
+    unsigned short relaySaveTimer;
     unsigned long  maxTime;
     char           name[20];
 } output_t;
 
 output_t output[NUM_OUTPUTS] = {
-{STOP, ROLLO, 15, 14, 0, 3500, "Wohnzimmmer rechts"},
-{STOP, ROLLO, 19, 18, 0, 2500, "Gaeste WC"},
-{STOP, ROLLO, 21, 20, 0, 2500, "Kueche Fenster"},
-{STOP, ROLLO,  9,  8, 0, 2500, "Technik"},
-{STOP, ROLLO,  1,  0, 0, 3500, "Wohnzimmmer links"},
-{STOP, ROLLO,  3,  2, 0, 3500, "Kueche Tuer"},
-{STOP, ROLLO,  7,  6, 0, 2500, "Eltern"},
-{STOP, ROLLO, 31, 30, 0, 2500, "Kind rechts",},
-{STOP, ROLLO, 27, 26, 0, 2500, "Kind links"},
-{STOP, ROLLO, 29, 28, 0, 2500, "Bad"},
+{STOP, ROLLO, 15, 14, 0, 0, 3500, "Wohnzimmmer rechts"},
+{STOP, ROLLO, 19, 18, 0, 0, 2500, "Gaeste WC"},
+{STOP, ROLLO, 21, 20, 0, 0, 2500, "Kueche Fenster"},
+{STOP, ROLLO,  9,  8, 0, 0, 2500, "Technik"},
+{STOP, ROLLO,  1,  0, 0, 0, 3500, "Wohnzimmmer links"},
+{STOP, ROLLO,  3,  2, 0, 0, 3500, "Kueche Tuer"},
+{STOP, ROLLO,  7,  6, 0, 0, 2500, "Eltern"},
+{STOP, ROLLO, 31, 30, 0, 0, 2500, "Kind rechts",},
+{STOP, ROLLO, 27, 26, 0, 0, 2500, "Kind links"},
+{STOP, ROLLO, 29, 28, 0, 0, 2500, "Bad"},
 };
 
 // jeweils nur 6 Bit pro Byte. Wie bei der Hardware.
@@ -353,8 +356,18 @@ void setEvent(event_t event, unsigned long outputs, char *name) {
 }
 
 void setOutputs(void) {
-    unsigned long val = ~outputs, i;
-    wait();
+#ifdef REDUCE_RELAY_TRAFIC
+    static unsigned long outputsOld = 0xFFFFF, intTime = 0;
+#endif    
+	unsigned long val = ~outputs, i;
+#ifdef REDUCE_RELAY_TRAFIC 
+    if (outputs == outputsOld && intTime < 100)  {
+		intTime++;
+		return;
+	}
+	intTime = 0;
+#endif	
+	wait();
     for (i = 0; i < 32; i++) {
         if (val & 1)
         	PORTB |= P_SER;
@@ -370,6 +383,9 @@ void setOutputs(void) {
     PORTB |= P_RCK_O;
     wait();
     PORTB &= ~P_RCK_O;
+#ifdef REDUCE_RELAY_TRAFIC     
+    outputsOld = outputs;
+#endif    
 }
 
 void setTime(unsigned char hour, unsigned char min, unsigned char day) {
@@ -407,19 +423,37 @@ beispiel:
  	*/
 }
 
+void switchPowerOff(output_t *out) {
+	if (outputs & OUT(out->outPower)) { 
+		outputs &= ~OUT(out->outPower);
+		out->relaySaveTimer = SWITCH_TIME;
+	}
+}    
+
 void rolloControl(event_t event, unsigned char out_id) {
 	output_t *out;
 	if (out_id >= NUM_OUTPUTS)
 		return;
 	out = &output[out_id];
 	if (out->type == ROLLO) {
+		// gemeinsammes Verhalten für alle Conts
+		if (event == EVT_CONT) {
+			// verzögert Power einschalten
+			if (out->relaySaveTimer)
+				out->relaySaveTimer--;
+			else if (out->timer) {
+				out->timer--;
+				outputs |= OUT(out->outPower);
+			} else {
+				switchPowerOff(out);
+			}
+		}
 		switch (out->state) {
 		case UP_START:
-			out->timer = out->maxTime + SWITCH_TIME;
 			out->state = UP;
+			out->timer = out->maxTime; 
 			outputs |=  OUT(out->outUpOrOn);
-			outputs &= ~OUT(out->outPower);
-			UARTprintf("UP_START out %s (%d) pwr=%d up=%d\n", out->name, out_id, out->outUpOrOn, out->outPower);
+			UARTprintf("UP_START out %s (%d)\n", out->name, out_id);
 		case UP:
 			switch (event) {
 			case EVT_DOWN:
@@ -437,29 +471,16 @@ void rolloControl(event_t event, unsigned char out_id) {
 			case EVT_OFF:
 				break;
 
-			case EVT_CONT:
-				// verzögert Power einschalten
-				if (out->timer < out->maxTime)
-					outputs |= OUT(out->outPower);
-				if (out->timer)
-					out->timer--;
-				else {
-					outputs &= ~OUT(out->outPower);
-					outputs &= ~OUT(out->outUpOrOn);
-				}
-				break;
-
 			default:
 				break;
 			}
 			break;
 
 		case DOWN_START:
-			out->timer = out->maxTime + SWITCH_TIME;
+			out->timer = out->maxTime;
 			out->state = DOWN;
 			outputs &= ~OUT(out->outUpOrOn);
-			outputs &= ~OUT(out->outPower);
-			UARTprintf("DOWN_START out %s (%d) pwr=%d up=%d\n", out->name, out_id, out->outUpOrOn, out->outPower);
+			UARTprintf("DOWN_START out %s (%d)\n", out->name, out_id);
 		case DOWN:
 			switch (event) {
 			case EVT_UP:
@@ -472,16 +493,6 @@ void rolloControl(event_t event, unsigned char out_id) {
 			case EVT_OFF:
 				break;
 
-			case EVT_CONT:
-				// verzögert Power einschalten
-				if (out->timer < out->maxTime)
-					outputs |= OUT(out->outPower);
-				if (out->timer)
-					out->timer--;
-				else {
-					outputs &= ~OUT(out->outPower);
-				}
-				break;
 
 			default:
 				break;
@@ -490,7 +501,7 @@ void rolloControl(event_t event, unsigned char out_id) {
 
 		case STOP_START:
 			outputs &= ~OUT(out->outUpOrOn);
-			outputs &= ~OUT(out->outPower);
+			switchPowerOff(out);
 			out->state = STOP;
 			UARTprintf("STOP_START out %s (%d)\n", out->name, out_id);
 		case STOP:
@@ -507,7 +518,7 @@ void rolloControl(event_t event, unsigned char out_id) {
 
 		}
 	} else {
-
+        	//UARTprintf("OUTPUT Mode not implementetd only Rollo");
 	}
 }
 
@@ -544,7 +555,7 @@ void SysTickHandler(void) {
    }
    if (secoundsOfDay < 0) {
 	   secoundsOfDay += 60*60*24;
-	   weekDay++;
+	   weekDay--;
 	   if (weekDay >= 7)
 		   weekDay = 6;
    } else if (secoundsOfDay >= 60*60*24) {
@@ -555,33 +566,43 @@ void SysTickHandler(void) {
    }   
 }
 
+char getHour(int secOD) {
+	return secOD / (60*60);
+}
+
+char getMin(int secOD) {
+	return (secOD % (60*60)) / 60; 
+} 
+
 void printTime(void) {
-	int hour = secoundsOfDay / (60*60);
-	int min = (secoundsOfDay - (hour*60*60)) / 60;
-	UARTprintf("Time: %02d:%02x:02d ", hour, min, secoundsOfDay % 60);
+	UARTprintf("%02d:%02x ", getHour(secoundsOfDay), getMin(secoundsOfDay));
 	switch (weekDay) {
 	case MO:
-		UARTprintf("Montag\n");
+		UARTprintf("Montag");
 		break;
 	case DI:
-		UARTprintf("Dienstag\n");
+		UARTprintf("Dienstag");
 		break;
 	case MI:
-		UARTprintf("Mittwoch\n");
+		UARTprintf("Mittwoch");
 		break;
 	case DO:
-		UARTprintf("Donnerstag\n");
+		UARTprintf("Donnerstag");
 		break;
 	case FR:
-		UARTprintf("Freitag\n");
+		UARTprintf("Freitag");
 		break;
 	case SA:
-		UARTprintf("Samstag\n");
+		UARTprintf("Samstag");
 		break;
 	case SO:
-		UARTprintf("Sonntag\n");
+		UARTprintf("Sonntag");
 		break;
+	default:
+		UARTprintf("%d ist ein fehlerhafter Wochentag", weekDay);
+		break;	
 	}
+	UARTprintf("\r\n");
 }
 
 void serialControl(void) {
@@ -642,13 +663,14 @@ int main(void) {
 	SysTickIntRegister(SysTickHandler);
 	UARTprintf("\nRollocontrol v0.1 (Martin Ongsiek)\n");
     readSettingsFromEerpom();
+#ifdef INITAL_RELAY_TEST
     for (i = 0; i < 32; i++) {
     	while (ticks < 250);
 		ticks = 0;
 		outputs = OUT(i);
 		setOutputs();
-
     }
+#endif    
     outputs = 0;
 	while (1) {
 	 	if (ticks >= 10) {
