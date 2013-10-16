@@ -45,6 +45,7 @@
 #include <driverlib/debug.h>
 #include <driverlib/gpio.h>
 #include <driverlib/rom.h>
+#include <driverlib/uart.h>
 #include <driverlib/sysctl.h>
 #include <driverlib/systick.h>
 #include <driverlib/timer.h>
@@ -55,7 +56,7 @@
 
 //#undef DEBUG
 //#define DEBUG
-#define NUM_INPUTS    32
+#define NUM_INPUTS    36
 #define NUM_OUTPUTS   10
 #define NUM_TIMERS     4
 #define DEBOUNCE_TIME  5
@@ -68,7 +69,7 @@
 #define OUT_ALLE  (OUT(0) | OUT(1) | OUT(2) | OUT(3) | OUT(4) | OUT(5) | OUT(6) | OUT(7) | OUT(8) | OUT(9)) 
 #define SET_TIME(hour, minute)   (hour*60*60 + minute*60)
 
-#define REDUCE_RELAY_TRAFIC
+//#define REDUCE_RELAY_TRAFIC
 
 volatile int secoundsOfDay;
 volatile unsigned char ticks;
@@ -126,10 +127,10 @@ typedef struct {
 } time_t;
 
 time_t timeEvents[NUM_TIMERS] = {
-{WE,    SET_TIME( 9, 0), EVT_UP,   OUT_ALLE, "WE Hoch"},
-{WE,    SET_TIME(20, 0), EVT_DOWN, OUT_ALLE, "WE Runter"},
-{MO_FR, SET_TIME( 8, 0), EVT_UP,   OUT_ALLE, "Wochentags Hoch"},
-{MO_FR, SET_TIME(21, 0), EVT_DOWN, OUT_ALLE, "Wochentags Runter"},
+{WE,    SET_TIME( 8,30), EVT_UP,   OUT_ALLE, "WE Hoch"},
+{WE,    SET_TIME(19,30), EVT_DOWN, OUT_ALLE, "WE Runter"},
+{MO_FR, SET_TIME( 7,30), EVT_UP,   OUT_ALLE, "Wochentags Hoch"},
+{MO_FR, SET_TIME(19,30), EVT_DOWN, OUT_ALLE, "Wochentags Runter"},
 };
 
 /*
@@ -181,6 +182,20 @@ input_t inputs[NUM_INPUTS] = {
  {0, "Bad",                EVT_UP,    OUT(9)},
  {0, "Alle",               EVT_DOWN,  OUT_ALLE},
  {0, "Alle",               EVT_UP,    OUT_ALLE},
+ {0, "nicht belegt",       EVT_ON,    0},
+ {0, "nicht belegt",       EVT_ON,    0},
+ {0, "nicht belegt",       EVT_ON,    0},
+ {0, "nicht belegt",       EVT_ON,    0},
+ {0, "nicht belegt",       EVT_ON,    0},
+ {0, "nicht belegt",       EVT_ON,    0},
+ {0, "nicht belegt",       EVT_ON,    0},
+ {0, "nicht belegt",       EVT_ON,    0},
+ {0, "nicht belegt",       EVT_ON,    0},
+ {0, "nicht belegt",       EVT_ON,    0},
+ {0, "nicht belegt",       EVT_ON,    0},
+ {0, "nicht belegt",       EVT_ON,    0},
+ {0, "nicht belegt",       EVT_ON,    0},
+ {0, "nicht belegt",       EVT_ON,    0},
 };
 
 typedef struct {
@@ -213,7 +228,7 @@ unsigned char inputs_new[6], inputs_debounced[6];
 void setEvent(event_t event, unsigned long outputs, char *name);
 void readInputs(void);
 void timeManager(void);
-void rolloControl(event_t event, unsigned char out_id);
+void rolloControl(event_t event, unsigned char out_id, unsigned short delay);
 void setOutputs(void);
 void readSettingsFromEerpom(void);
 void saveSettingsInEeprom(void);
@@ -263,7 +278,7 @@ static void procInput(input_t *input,
 
 static void wait() {
 	int i;
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < 11; i++) {
 		__asm("nop");
 		__asm("nop");
 		__asm("nop");
@@ -312,7 +327,6 @@ void readInputs(void) {
 	 	wait();
 	 	wait();
 	 	wait();
-	 	wait();
 
 		val = ~((((PORTD >> IN_H1) & 1) << 0) |
 			    (((PORTA >> IN_R1) & 1) << 1) |
@@ -343,10 +357,11 @@ void readInputs(void) {
 
 void setEvent(event_t event, unsigned long outputs, char *name) {
 	int i;
-
+	unsigned short delay = 0;
 	for (i = 0; i < NUM_OUTPUTS; i++)  {
 		if (outputs & 1) {
-			rolloControl(event, i);
+			rolloControl(event, i, delay);
+			delay += 20;
 		}
 		outputs >>= 1;
 	}
@@ -430,7 +445,7 @@ void switchPowerOff(output_t *out) {
 	}
 }    
 
-void rolloControl(event_t event, unsigned char out_id) {
+void rolloControl(event_t event, unsigned char out_id, unsigned short delay) {
 	output_t *out;
 	if (out_id >= NUM_OUTPUTS)
 		return;
@@ -450,6 +465,8 @@ void rolloControl(event_t event, unsigned char out_id) {
 		}
 		switch (out->state) {
 		case UP_START:
+			if (delay > out->relaySaveTimer)
+				out->relaySaveTimer = delay;
 			out->state = UP;
 			out->timer = out->maxTime; 
 			outputs |=  OUT(out->outUpOrOn);
@@ -477,6 +494,8 @@ void rolloControl(event_t event, unsigned char out_id) {
 			break;
 
 		case DOWN_START:
+			if (delay > out->relaySaveTimer)
+				out->relaySaveTimer = delay;
 			out->timer = out->maxTime;
 			out->state = DOWN;
 			outputs &= ~OUT(out->outUpOrOn);
@@ -502,6 +521,7 @@ void rolloControl(event_t event, unsigned char out_id) {
 		case STOP_START:
 			outputs &= ~OUT(out->outUpOrOn);
 			switchPowerOff(out);
+			out->timer = 0;
 			out->state = STOP;
 			UARTprintf("STOP_START out %s (%d)\n", out->name, out_id);
 		case STOP:
@@ -512,6 +532,9 @@ void rolloControl(event_t event, unsigned char out_id) {
 
 			case EVT_DOWN:
 				out->state = DOWN_START;
+				break;
+
+			default:
 				break;
 			}
 			break;
@@ -575,27 +598,27 @@ char getMin(int secOD) {
 } 
 
 void printTime(void) {
-	UARTprintf("%02d:%02x ", getHour(secoundsOfDay), getMin(secoundsOfDay));
+	UARTprintf("%02d:%02d ", getHour(secoundsOfDay), getMin(secoundsOfDay));
 	switch (weekDay) {
-	case MO:
+	case 0:
 		UARTprintf("Montag");
 		break;
-	case DI:
+	case 1:
 		UARTprintf("Dienstag");
 		break;
-	case MI:
+	case 2:
 		UARTprintf("Mittwoch");
 		break;
-	case DO:
+	case 3:
 		UARTprintf("Donnerstag");
 		break;
-	case FR:
+	case 4:
 		UARTprintf("Freitag");
 		break;
-	case SA:
+	case 5:
 		UARTprintf("Samstag");
 		break;
-	case SO:
+	case 6:
 		UARTprintf("Sonntag");
 		break;
 	default:
@@ -608,6 +631,15 @@ void printTime(void) {
 void serialControl(void) {
 	while (UARTRxBytesAvail()) {
 		switch (UARTgetc()) {
+
+		case 'u':
+			setEvent(EVT_UP,  OUT_ALLE, "Alle Hoch (serial)");
+			break;
+
+		case 'U':
+			setEvent(EVT_DOWN, OUT_ALLE, "Alle Runter (serial)");
+			break;
+
 		case 'm':
 			secoundsOfDay += 60;
 			printTime();
@@ -661,7 +693,8 @@ int main(void) {
 
 	GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, P_SCK | OUT(3));
 	SysTickIntRegister(SysTickHandler);
-	UARTprintf("\nRollocontrol v0.1 (Martin Ongsiek)\n");
+	UARTEchoSet(false);
+	UARTprintf("\nRollocontrol v0.2 (Martin Ongsiek)\n");
     readSettingsFromEerpom();
 #ifdef INITAL_RELAY_TEST
     for (i = 0; i < 32; i++) {
@@ -678,7 +711,7 @@ int main(void) {
 			readInputs();
 			timeManager();
 			for (i = 0; i < NUM_OUTPUTS; i++)
-				rolloControl(EVT_CONT, i);
+				rolloControl(EVT_CONT, i, 0);
 			//UARTprintf("%x\n", outputs);
 			setOutputs();
 			serialControl();
