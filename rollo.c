@@ -441,6 +441,7 @@ beispiel:
 void switchPowerOff(output_t *out) {
 	if (outputs & OUT(out->outPower)) { 
 		outputs &= ~OUT(out->outPower);
+		outputs &= ~OUT(out->outUpOrOn);
 		out->relaySaveTimer = SWITCH_TIME;
 	}
 }    
@@ -569,13 +570,7 @@ void __error__(char *pcFilename, unsigned long ulLine) {
 }
 #endif
 
-void SysTickHandler(void) {
-	timeInMs++;
-    ticks++;
-	if (timeInMs == 1000) {
-   		timeInMs = 0;
-		secoundsOfDay++; 
-   }
+static void timeOverflowCorrecter(void) {
    if (secoundsOfDay < 0) {
 	   secoundsOfDay += 60*60*24;
 	   weekDay--;
@@ -583,10 +578,21 @@ void SysTickHandler(void) {
 		   weekDay = 6;
    } else if (secoundsOfDay >= 60*60*24) {
        secoundsOfDay = 0;
-       weekDay++;
-       if (weekDay == 7)
-           weekDay = 0; 
-   }   
+       weekDay++; 
+   }
+   if (weekDay >= 7)
+		weekDay = 0; 
+}
+
+// Aufruf jede Millisekunde (interrupt)
+void SysTickHandler(void) {
+	timeInMs++;
+    ticks++;
+	if (timeInMs == 1000) {
+   		timeInMs = 0;
+		secoundsOfDay++; 
+   }
+   timeOverflowCorrecter();
 }
 
 char getHour(int secOD) {
@@ -595,6 +601,31 @@ char getHour(int secOD) {
 
 char getMin(int secOD) {
 	return (secOD % (60*60)) / 60; 
+}
+
+void timeIncMin(void) {
+    secoundsOfDay += 60;
+	timeOverflowCorrecter();
+} 
+
+void timeDecMin(void) {
+    secoundsOfDay -= 60;
+	timeOverflowCorrecter();
+}
+
+void timeIncHour(void) {
+    secoundsOfDay += 60*60;
+	timeOverflowCorrecter();
+} 
+
+void timeDecHour(void) {
+    secoundsOfDay -= 60*60;
+	timeOverflowCorrecter();
+}
+
+void timeIncDay(void) {
+    weekDay++;
+	timeOverflowCorrecter();
 } 
 
 void printTime(void) {
@@ -641,29 +672,28 @@ void serialControl(void) {
 			break;
 
 		case 'm':
-			secoundsOfDay += 60;
+			timeIncMin();
 			printTime();
 			break;
 
 		case 'M':
-			secoundsOfDay -= 60;
+			timeDecMin();
 			printTime();
 			break;
 
 		case 'h':
-			secoundsOfDay += 60*60;
+			timeIncHour();
 			printTime();
 			break;
 
 		case 'H':
-			secoundsOfDay -= 60*60;
+			timeDecHour();
 			printTime();
 			break;
 
 		case 'd':
-			weekDay++;
-			if (weekDay >= 7)
-				weekDay = 0;
+            timeIncDay();
+			printTime();
 			break;
 
 		case 't':
