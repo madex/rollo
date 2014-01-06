@@ -1,0 +1,33 @@
+<html>
+<head><title>Rollocontrol</title>
+
+</head>
+<body>
+<script type="text/javascript">
+var myJson = {"timeEvents":[{"name":"WE Hoch","days":96,"event":"hoch","secoundOfDay":34200,"id":0}
+,{"name":"WE Runter","days":96,"event":"runter","secoundOfDay":64800,"id":1}
+,{"name":"Wochentags Hoch","days":31,"event":"hoch","secoundOfDay":27000,"id":2}
+,{"name":"Wochentags Runter","days":31,"event":"runter","secoundOfDay":64800,"id":3}
+,{"name":"WE Tueren","days":96,"event":"runter","secoundOfDay":61200,"id":4}
+,{"name":"Wochentags Tueren","days":31,"event":"runter","secoundOfDay":61200,"id":5}
+],
+"time":{"secoundsOfDay":0,"weekDay":0},
+"outputs":[{"name":"Wohnzimmmer rechts","maxTime":3500,"id":5,"state":0}
+,{"name":"Gaeste WC","maxTime":2500,"id":5,"state":1}
+,{"name":"Kueche Fenster","maxTime":2500,"id":5,"state":2}
+,{"name":"Technik","maxTime":2500,"id":5,"state":3}
+,{"name":"Wohnzimmmer links","maxTime":3500,"id":5,"state":4}
+,{"name":"Kueche Tuer","maxTime":3500,"id":5,"state":5}
+,{"name":"Eltern","maxTime":2500,"id":5,"state":6}
+,{"name":"Kind rechts","maxTime":2500,"id":5,"state":7}
+,{"name":"Kind links","maxTime":2500,"id":5,"state":8}
+,{"name":"Bad","maxTime":2500,"id":5,"state":9}]};
+
+myJson.time.secoundsOfDay = 61200; 
+
+var h = myJson.time.secoundsOfDay / 3600, min = (myJson.time.secoundsOfDay % 3600) / 60, sec = myJson.time.secoundsOfDay % 60; 
+document.write(h + ":" + min + ":" + sec);
+
+</script>
+<body>
+</html>
