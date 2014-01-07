@@ -23,11 +23,47 @@ var myJson = {"timeEvents":[{"name":"WE Hoch","days":96,"event":"hoch","secoundO
 ,{"name":"Kind links","maxTime":2500,"id":5,"state":8}
 ,{"name":"Bad","maxTime":2500,"id":5,"state":9}]};
 
+function getCurSecOfDay() {
+	var d = new Date();
+    return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+}
+function getCurWeekDay() {
+	var d = new Date().getDay();
+	if (d == 0)
+		return 6;
+	else 
+		return d - 1;	
+}
+
+function secOfDay2String(sod) {                
+	var h = Math.floor(sod / 3600), min = Math.floor((sod % 3600) / 60), sec = sod % 60;
+	if (h < 10)   {h   = "0"+h;}
+	if (min < 10) {min = "0"+min;}
+	if (sec < 10) {sec = "0"+sec;}
+	return h + ":" + min + ":" + sec; 
+}
+
+function recursiveList(obj) {
+	var t = "<ul>";
+	for (i in obj) {
+		t += "<li>" + i;
+		if (obj[i] instanceof Object) {
+			t += recursiveList(obj[i]);
+		} else {
+			t += " = " + obj[i]; 
+		}
+		t += "</li>";
+	}
+	t += "</ul>";
+	return t;	
+}
+
 myJson.time.secoundsOfDay = 61200; 
-
-var h = myJson.time.secoundsOfDay / 3600, min = (myJson.time.secoundsOfDay % 3600) / 60, sec = myJson.time.secoundsOfDay % 60; 
-document.write(h + ":" + min + ":" + sec);
-
+document.write(secOfDay2String(300) + "<br>");
+document.write(secOfDay2String(myJson.time.secoundsOfDay) + "<br>");
+document.write(secOfDay2String(getCurSecOfDay()) + "<br>");
+document.write(getCurWeekDay() + "<br>");
+document.write(recursiveList(myJson));
 </script>
 <body>
 </html>
