@@ -4,29 +4,12 @@
 </head>
 <body>
 <script type="text/javascript">
-var myJson = {"timeEvents":[{"name":"WE Hoch","days":96,"event":"hoch","secoundOfDay":34200,"id":0}
-,{"name":"WE Runter","days":96,"event":"runter","secoundOfDay":64800,"id":1}
-,{"name":"Wochentags Hoch","days":31,"event":"hoch","secoundOfDay":27000,"id":2}
-,{"name":"Wochentags Runter","days":31,"event":"runter","secoundOfDay":64800,"id":3}
-,{"name":"WE Tueren","days":96,"event":"runter","secoundOfDay":61200,"id":4}
-,{"name":"Wochentags Tueren","days":31,"event":"runter","secoundOfDay":61200,"id":5}
-],
-"time":{"secoundsOfDay":0,"weekDay":0},
-"outputs":[{"name":"Wohnzimmmer rechts","maxTime":3500,"id":5,"state":0}
-,{"name":"Gaeste WC","maxTime":2500,"id":5,"state":1}
-,{"name":"Kueche Fenster","maxTime":2500,"id":5,"state":2}
-,{"name":"Technik","maxTime":2500,"id":5,"state":3}
-,{"name":"Wohnzimmmer links","maxTime":3500,"id":5,"state":4}
-,{"name":"Kueche Tuer","maxTime":3500,"id":5,"state":5}
-,{"name":"Eltern","maxTime":2500,"id":5,"state":6}
-,{"name":"Kind rechts","maxTime":2500,"id":5,"state":7}
-,{"name":"Kind links","maxTime":2500,"id":5,"state":8}
-,{"name":"Bad","maxTime":2500,"id":5,"state":9}]};
 
 function getCurSecOfDay() {
 	var d = new Date();
     return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
 }
+
 function getCurWeekDay() {
 	var d = new Date().getDay();
 	if (d == 0)
@@ -57,13 +40,38 @@ function recursiveList(obj) {
 	t += "</ul>";
 	return t;	
 }
+/*
+function ajax(a,b,c){ // Url, Callback, just a placeholder
+ c = new XMLHttpRequest;
+ c.open('GET',a);
+ c.onload=b;
+ c.send()
+}
 
-myJson.time.secoundsOfDay = 61200; 
-document.write(secOfDay2String(300) + "<br>");
-document.write(secOfDay2String(myJson.time.secoundsOfDay) + "<br>");
-document.write(secOfDay2String(getCurSecOfDay()) + "<br>");
-document.write(getCurWeekDay() + "<br>");
-document.write(recursiveList(myJson));
+/ajax?cmd=setTime&sod=20344&weekDay=3
+*/
+
+function request(callback) {
+    var httpRequest = new XMLHttpRequest();
+    httpRequest.onreadystatechange = function(){
+        if (httpRequest.readyState === 4) {// request is done
+            if (httpRequest.status === 200) {// successfully
+                callback(httpRequest.responseText);// we're calling our method
+            }
+        }
+    };    httpRequest.open('GET', "/ajax");
+    httpRequest.send();
+}
+
+request(function(resp) {
+	var myJson = JSON.parse(resp); 	
+	document.write(secOfDay2String(300) + "<br>");
+	document.write(secOfDay2String(myJson.time.secoundsOfDay) + "<br>");
+	document.write(secOfDay2String(getCurSecOfDay()) + "<br>");
+	document.write(getCurWeekDay() + "<br>");
+	document.write(recursiveList(myJson));
+});
+
 </script>
 <body>
 </html>
