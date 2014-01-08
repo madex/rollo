@@ -172,7 +172,7 @@ a:focus {
    http://modularscale.com/scale/?px1=12&px2=20&ra1=1.333&ra2=0
 \* ================================================================== */
 
-html { font-size: 75%; } /* 12px */
+html { font-size: 100%; } /* 12px */
 @media only screen and (min-width: 320px)  { html { font-size: 81.25%; } } /* 13px */
 @media only screen and (min-width: 480px)  { html { font-size: 87.5%;  } } /* 14px */
 @media only screen and (min-width: 640px)  { html { font-size: 100%;   } } /* 16px */
@@ -846,18 +846,8 @@ table td {
 	width: 90%;
 }
 
-/* Island and wells */
-.island,
 .well {
-	margin: 0 0 1rem;
-}
-
-.island {
-	padding: 1rem;
-	background: #efefef;
-}
-
-.well {
+    margin: 0 0 1rem;
 	padding: 1rem;
 	background: #efefef;
 	-webkit-box-shadow: inset 0 0 8px hsla(0, 0%, 0%, 0.15);
@@ -865,36 +855,9 @@ table td {
 	box-shadow:         inset 0 0 8px hsla(0, 0%, 0%, 0.15);
 }
 
-.island .island,
 .well .well {
 	background: #dedede;
 }
-
-.island.island_hollow,
-.well.well_hollow {
-	background: transparent;
-	-webkit-box-shadow: inset 0 0 0 3px hsla(0, 0%, 94%, 1.0);
-	-moz-box-shadow:    inset 0 0 0 3px hsla(0, 0%, 94%, 1.0);
-	box-shadow:         inset 0 0 0 3px hsla(0, 0%, 94%, 1.0);
-}
-
-.island.island_rounded,
-.well.well_rounded {
-	-webkit-border-radius: 0.356rem;
-	-moz-border-radius:    0.356rem;
-	border-radius:         0.356rem;
-}
-
-/* ================================================================== *\
-   Grids ($grids)
-\* ================================================================== */
-
-/**
- * Grid container
- * 1. Default gutter width, change if desired
- * 2. Remove `list-style` in case `.grid` is on a <ul> element
- * 3. Hack to remove `inline-block` whitespace - http://cbrac.co/16xcjcl
- */
 
 .grid {
 	margin: 0;
@@ -904,25 +867,10 @@ table td {
 	font-size: 0;       /* 3 */
 }
 
-/* Gutters */
-.grid_gutter_none              { margin-left: 0;     }
-.grid_gutter_none .grid-item   { padding-left: 0;    }
-.grid_gutter_half              { margin-left: -1rem; }
-.grid_gutter_half .grid-item   { padding-left: 1rem; }
-.grid_gutter_double            { margin-left: -4rem; }
-.grid_gutter_double .grid-item { padding-left: 4rem; }
-
-/**
- * Grid item
- * 1. Default gutter width, change if desired
- * 2. Ensures elements within `.grid-item` start at the top
- * 3. Reset `font-size` back to normal
- */
-
 .grid-item {
 	display: inline-block;
 	padding-left: 2rem;  /* 1 */
-	vertical-align: top; /* 2 */
+	vertical-align: middle; /* 2 */
 	font-size: 1rem;     /* 3 */
 }
 
@@ -945,68 +893,6 @@ table td {
 .four_sixths   { width: 66.666%; }
 .five_sixths   { width: 83.333%; }
 .width_auto    { width: auto;    }
-
-/* Grid breakpoint for devices that sit in your lap (eg. tablets) */
-@media only screen and (min-width: 640px) {
-	/* Gutter options */
-	.lap-grid_gutter_none              { margin-left: 0;     }
-	.lap-grid_gutter_none .grid-item   { padding-left: 0;    }
-	.lap-grid_gutter_half              { margin-left: -1rem; }
-	.lap-grid_gutter_half .grid-item   { padding-left: 1rem; }
-	.lap-grid_gutter_whole             { margin-left: -2rem; }
-	.lap-grid_gutter_whole .grid-item  { padding-left: 2rem; }
-	.lap-grid_gutter_double            { margin-left: -4rem; }
-	.lap-grid_gutter_double .grid-item { padding-left: 4rem; }
-
-	/* Widths */
-	.lap-one_whole      { width: 100%;    }
-	.lap-one_half       { width: 50%;     }
-	.lap-one_third      { width: 33.333%; }
-	.lap-two_thirds     { width: 66.666%; }
-	.lap-one_fourth     { width: 25%;     }
-	.lap-three_fourths  { width: 75%;     }
-	.lap-one_fifth      { width: 20%;     }
-	.lap-two_fifths     { width: 40%;     }
-	.lap-three_fifths   { width: 60%;     }
-	.lap-four_fifths    { width: 80%;     }
-	.lap-one_sixth      { width: 16.666%; }
-	.lap-two_sixths     { width: 33.333%; }
-	.lap-three_sixths   { width: 50%;     }
-	.lap-four_sixths    { width: 66.666%; }
-	.lap-five_sixths    { width: 83.333%; }
-	.lap-width_auto     { width: auto;    }
-}
-
-/* Grid breakpoint for devices that remain on your desk (eg. iMac) */
-@media only screen and (min-width: 960px) {
-	/* Gutter options */
-	.desk-grid_gutter_none              { margin-left: 0;     }
-	.desk-grid_gutter_none .grid-item   { padding-left: 0;    }
-	.desk-grid_gutter_half              { margin-left: -1rem; }
-	.desk-grid_gutter_half .grid-item   { padding-left: 1rem; }
-	.desk-grid_gutter_whole             { margin-left: -2rem; }
-	.desk-grid_gutter_whole .grid-item  { padding-left: 2rem; }
-	.desk-grid_gutter_double            { margin-left: -4rem; }
-	.desk-grid_gutter_double .grid-item { padding-left: 4rem; }
-
-	/* Widths */
-	.desk-one_whole     { width: 100%;    }
-	.desk-one_half      { width: 50%;     }
-	.desk-one_third     { width: 33.333%; }
-	.desk-two_thirds    { width: 66.666%; }
-	.desk-one_fourth    { width: 25%;     }
-	.desk-three_fourths { width: 75%;     }
-	.desk-one_fifth     { width: 20%;     }
-	.desk-two_fifths    { width: 40%;     }
-	.desk-three_fifths  { width: 60%;     }
-	.desk-four_fifths   { width: 80%;     }
-	.desk-one_sixth     { width: 16.666%; }
-	.desk-two_sixths    { width: 33.333%; }
-	.desk-three_sixths  { width: 50%;     }
-	.desk-four_sixths   { width: 66.666%; }
-	.desk-five_sixths   { width: 83.333%; }
-	.desk-width_auto    { width: auto;    }
-}
 
 /* ================================================================== *\
    Buttons ($buttons)
@@ -1131,24 +1017,6 @@ table td {
 	box-shadow:         inset 0 0 0 3px #ddd !important;
 }
 
-/* ================================================================== *\
-   Main ($main)
-\* ================================================================== */
-
-
-
-
-/**
- * YOUR MAGICAL CSS GOES HERE!
- */
-
-
-
-
-/* ================================================================== *\
-   Helpers ($helpers)
-\* ================================================================== */
-
 /* Font sizing */
 .font_huge,
 .font_xxl { line-height: 1.333 !important; }
@@ -1175,99 +1043,6 @@ table td {
 .text_center  { text-align: center !important;  }
 .text_right   { text-align: right !important;   }
 .text_justify { text-align: justify !important; }
-
-@media only screen and (min-width: 640px) {
-	/* Font sizing */
-	.lap-font_huge    { font-size: 4.209rem !important; }
-	.lap-font_xxl     { font-size: 3.157rem !important; }
-	.lap-font_xl      { font-size: 2.369rem !important; }
-	.lap-font_large   { font-size: 1.777rem !important; }
-	.lap-font_medium  { font-size: 1.333rem !important; }
-	.lap-font_regular { font-size: 1rem !important;     }
-	.lap-font_small   { font-size: 0.75rem !important;  }
-
-	/* Font styles */
-	.lap-font_ultralight { font-weight: 100; }
-	.lap-font_light      { font-weight: 300; }
-	.lap-font_normal     { font-weight: 400; }
-	.lap-font_semibold   { font-weight: 600; }
-	.lap-font_bold       { font-weight: 700; }
-	.lap-font_black      { font-weight: 900; }
-	.lap-font_muted      { color: #777;      }
-
-	/* Text alignment */
-	.lap-text_left    { text-align: left !important;    }
-	.lap-text_center  { text-align: center !important;  }
-	.lap-text_right   { text-align: right !important;   }
-	.lap-text_justify { text-align: justify !important; }
-}
-
-@media only screen and (min-width: 960px) {
-	/* Font sizing */
-	.desk-font_huge    { font-size: 4.209rem !important; }
-	.desk-font_xxl     { font-size: 3.157rem !important; }
-	.desk-font_xl      { font-size: 2.369rem !important; }
-	.desk-font_large   { font-size: 1.777rem !important; }
-	.desk-font_medium  { font-size: 1.333rem !important; }
-	.desk-font_regular { font-size: 1rem !important;     }
-	.desk-font_small   { font-size: 0.75rem !important;  }
-
-	/* Font styles */
-	.desk-font_ultralight { font-weight: 100; }
-	.desk-font_light      { font-weight: 300; }
-	.desk-font_normal     { font-weight: 400; }
-	.desk-font_semibold   { font-weight: 600; }
-	.desk-font_bold       { font-weight: 700; }
-	.desk-font_black      { font-weight: 900; }
-	.desk-font_muted      { color: #777;      }
-
-	/* Text alignment */
-	.desk-text_left    { text-align: left !important;    }
-	.desk-text_center  { text-align: center !important;  }
-	.desk-text_right   { text-align: right !important;   }
-	.desk-text_justify { text-align: justify !important; }
-}
-
-/* Image replacement */
-.ir {
-	overflow: hidden;
-	border: 0;
-	background-color: transparent;
-}
-
-.ir:before {
-	display: block;
-	width: 0;
-	height: 100%;
-	content: "";
-}
-
-/* Hide from both screenreaders and browsers - http://cbrac.co/ZaoIxf */
-.hidden {
-	display: none !important;
-	visibility: hidden;
-}
-
-/**
- * Hide only visually, but have it available for screenreaders -
- * http://cbrac.co/TUcUgH
- */
-
-.visuallyhidden {
-	position: absolute;
-	overflow: hidden;
-	clip: rect(0 0 0 0);
-	margin: -1px;
-	padding: 0;
-	width: 1px;
-	height: 1px;
-	border: 0;
-}
-
-/**
- * Extends the `.visuallyhidden` class to allow the element to be
- * focusable when navigated to via the keyboard - http://cbrac.co/RR8gO6
- */
 
 .visuallyhidden.focusable:active,
 .visuallyhidden.focusable:focus {
@@ -1370,6 +1145,26 @@ var myJson;
 function stellen() {
     ajax('?cmd=setTime&sod='+getCurSecOfDay()+'&weekDay='+getCurWeekDay(), updateJson);
 }
+function getTimerList(timerEvents) {
+    var t = '';
+    for (x in timerEvents) {
+        var tage;
+        if (x.days == 1|2|4|8|16)
+            tage = "Montag - Freitag";
+        else {
+            for (var i = 0; i < 7; i++) {
+                if (x.days | (1 << i)) {
+                    if (tage)
+                        tage += ', ';
+                    tage += nameOfDay(i);
+                }
+            }
+        }
+        t += '<div class="rounded">'+x.name+'   '+nameOfDay+'    '+secOfDay2String(x.secoundsOfDay) + '</div>';
+    }
+    return t;
+}
+
 function updateJson(resp) {
     myJson = JSON.parse(resp);  
     var myClock = document.getElementById("Clock");
@@ -1377,21 +1172,31 @@ function updateJson(resp) {
 
     myClock.innerHTML = "Zeit der Steuerung:<br><b>" + nameOfDay(myJson.time.weekDay) + "  " + 
                         secOfDay2String(myJson.time.secoundsOfDay) + "</b>";
-    myJSONView.innerHTML = recursiveList(myJson);
+    TimeEvents.innerHTML = getTimerList(myJson.timeEvents);
+    Outputs.innerHTML = recursiveList(myJson);
 }
 setInterval(function() {
   	ajax('', updateJson);
 }, 1000);
 
 </script>
-<div class="content wrapper" role="content">
-<header class="text_center" role="header">
-<h1 class="masthead-title">Rolladensteuerung</h1>
-</header>
-
-<div class="grid grid_gutter_half text_center">
-    <div id="Clock" class="grid-item lap-one_half"></div>
-    <div class="grid-item lap-one_half"><input type="submit" class="button button_rounded button_primary" onclick="stellen()" value="Stellen"></div>
-</div>
+<div class="content" role="content">
+    <header class="text_center well" role="header">
+        <h1 class="masthead-title font_light">Rolladensteuerung</h1>
+    </header>
+    
+    <div class="grid text_center">
+        <div id="Clock" class="grid-item one_half font_large" style="vertical-align:center"></div>
+        <div class="grid-item one_half"><a href="javascript:stellen()" type="submit" class="button button_rounded button_chunky button_primary font_xl">Stellen</a>
+        </div>
+    </div>
+    <p/>
+    <h2 class="text_center well">Timer</h2>
+    <div id="TimeEvents" class="grid text_center font_large">
+    </div>
+    <p/>
+    <h2 class="text_center well">Ausg&auml;nge</h2>
+    <div id="Outputs" class="grid text_center font_large">
+    </div>
 </div>
 </html>

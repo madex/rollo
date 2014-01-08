@@ -15,16 +15,17 @@ OBJ = main.o
 OBJ_2    = $(patsubst %.o,$(OBJ_FOLDER)/%.o,$(OBJ))
 
 CFLAGS   = -g -std=c99 -Wextra -fprofile-arcs -ftest-coverage -I.
-LDFLAGS  = -fprofile-arcs -ftest-coverage -Wl,-Map,$(PRG).map
+LDFLAGS  = -fprofile-arcs -ftest-coverage -Wl,-map,$(PRG).map
 
 # Zus�tzliche Bibliotheken
 LIBS     = -lm
-CC       = gcc
+CC       = clang
 
-all: $(OBJ_FOLDER) $(DEP_FOLDER) $(BIN_FOLDER) $(PRG).exe toolchain.txt 
+all: $(OBJ_FOLDER) $(DEP_FOLDER) $(BIN_FOLDER) $(PRG) toolchain.txt 
 #toolchain.txt
 #gcov -f -u -o obj\Debug main.c
-$(PRG).exe: $(OBJ_2)
+
+$(PRG): $(OBJ_2)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 # Es gibt leider sehr merkwürdige Probleme.
@@ -35,12 +36,12 @@ toolchain.txt:
 	$(CC) --version >> $@
 	echo "Gnu Debugger:" >> $@
 	echo "-------------" >> $@
-	which gdb.exe >> $@
-	gdb.exe --version >> $@
+	which gdb >> $@
+	gdb --version >> $@
 	echo "Coverage Analyse:" >> $@
 	echo "-----------------" >> $@
-	which gcov.exe >> $@
-	gcov.exe --version >> $@
+	which gcov >> $@
+	gcov --version >> $@
 	echo make $(MAKE_VERSION) >> $@
 
 clean:

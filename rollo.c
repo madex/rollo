@@ -1,44 +1,3 @@
-/* Konzeption
- * ==========
- *
- * Eingänge abfragen:
- *  - Ablauf
- *    - ser clk !clk !ser rck_i !rck_i einlesen (stecker 1)
- *          clk !clk rck_i !rck_i einlesen (stecker 2)
- *          clk !clk rck_i !rck_i einlesen (stecker 3)
- *          clk !clk rck_i !rck_i einlesen (stecker 4)
- *          clk !clk rck_i !rck_i einlesen (stecker 5)
- *          clk !clk rck_i !rck_i einlesen (stecker 6)
- *  - 36 Eingänge entprellen. Jedes Rollo (2 Eingänge) hat eine eigene
- *    Struct mit Timer und Zustand, GroupId und einen freiparametrierbaren Namen.
- *  - Die 18 Rollo Inputs können Events erzeugen. EVT_UP, EVT_DOWN, EVT_STOP ..
- *  - Jedes Rollo hat eine GroupId. Mehrere RolloMotoren können mit
- *    einer GroupId addressiert werden.
- *  - Neben den Eingängen kann die Uhr auch Events erzeugen, die
- *    jeweils auch mit GroupId verbunden sind.
- *  - Events kënnnen zu Debug Zwecken dargestellt werden.
- * Events verteilen / Groupmanager.
- *  - An der Steuerung kënnen auch für alle Gruppen Events erzeugt werden.
- *  - Die Gruppen beinhalten
- *    - einen parametrierbaren Namen (20 Zeichen)
- *    - eine Ausgangsbitmaske mit alle Ausgänge die angesprochen werden sollen.
- *    - eine Priorität? (Noch unklar wie sie funktionieren soll)
- *    - Es gibt maximal 30 Gruppen. (siehe unten)
- *    - Der GroupManager wertet entsprechend der Gruppe und der Priorität die
- *      Events aus und leitet sie an die entsprechenden RolloControls weiter.
- *  - Es gibt 10 Rollos. Die restlichen 12 Relaisausgänge könnten andersweitig
- *    z.B. für zeitschaltfunktionen benutzt werden.
- * Rollos Motoren betreiben. RolloControl
- *  - Die Rolladen sollen
- *  - 10 ms Takt 
- * 
- * Rollos   KüFe KüTü WZLi WZRe GäWC HWR BAD KiRe KiLi SZim
- * Gruppen  KüFe KüTü WZLi WZRe GäWC HWR BAD KiRe KiLi SZim
- *          Kü(KüFe KüTü) Wz(WZLi WZRe) Unten(KüFe KüTü WZLi WZRe GäWC HWR)
- *          Oben(BAD KiRe KiLi SZim) Alle(..)
- *
- * written by Martin Ongsiek
- */
 #include <inc/lm3s9b96.h>
 #include <inc/hw_memmap.h>
 #include <inc/hw_types.h>
@@ -58,15 +17,16 @@
 //#define DEBUG
 #define NUM_INPUTS    36
 #define NUM_OUTPUTS   10
-#define NUM_TIMERS     4
+#define NUM_TIMERS    32
 #define DEBOUNCE_TIME  5
 
 #define PORTA GPIO_PORTA_DATA_R
 #define PORTB GPIO_PORTB_DATA_R
 #define PORTD GPIO_PORTD_DATA_R
 
-#define OUT(x)    (1UL << x)
-#define OUT_ALLE  (OUT(0) | OUT(1) | OUT(2) | OUT(3) | OUT(4) | OUT(5) | OUT(6) | OUT(7) | OUT(8) | OUT(9)) 
+#define OUT(x)     (1UL << x)
+#define OUT_ALLE   (OUT(0) | OUT(1) | OUT(2) | OUT(3) | OUT(4) | OUT(5) | OUT(6) | OUT(7) | OUT(8) | OUT(9))
+#define OUT_TUEREN (OUT(0) | OUT(4) | OUT(5))
 #define SET_TIME(hour, minute)   (hour*60*60 + minute*60)
 
 //#define REDUCE_RELAY_TRAFIC
@@ -96,6 +56,7 @@ typedef enum {
 	EVT_ON,
 	EVT_UP,
 	EVT_DOWN,
+	//EVT_DOWN_AIR,  // zum lüften wieder leicht nach oben fahren.
 	EVT_CONT,
 } event_t;
 
@@ -115,8 +76,9 @@ typedef struct {
 #define SA (1 << 5)
 #define SO (1 << 6)
 
-#define MO_FR    MO | DI | MI | DO| FR
-#define WE       SA | SO
+#define MO_FR    (MO | DI | MI | DO | FR)
+#define WE       (SA | SO)
+
 // C
 typedef struct {
 	unsigned char days;           // bit 0 mon bit 1 die ... 6 son
@@ -127,12 +89,42 @@ typedef struct {
 } time_t;
 
 time_t timeEvents[NUM_TIMERS] = {
-{WE,    SET_TIME( 8,30), EVT_UP,   OUT_ALLE, "WE Hoch"},
-{WE,    SET_TIME(19,30), EVT_DOWN, OUT_ALLE, "WE Runter"},
-{MO_FR, SET_TIME( 7,30), EVT_UP,   OUT_ALLE, "Wochentags Hoch"},
-{MO_FR, SET_TIME(19,30), EVT_DOWN, OUT_ALLE, "Wochentags Runter"},
+{WE,    SET_TIME( 9,30), EVT_UP,   OUT_ALLE,   "WE Hoch"},
+{WE,    SET_TIME(18,00), EVT_DOWN, OUT_ALLE,   "WE Runter"},
+{MO_FR, SET_TIME( 7,30), EVT_UP,   OUT_ALLE,   "Wochentags Hoch"},
+{MO_FR, SET_TIME(18,00), EVT_DOWN, OUT_ALLE,   "Wochentags Runter"},
+{WE,    SET_TIME(17,00), EVT_DOWN, OUT_TUEREN, "WE Tueren"},
+{MO_FR, SET_TIME(17,00), EVT_DOWN, OUT_TUEREN, "Wochentags Tueren"},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
+{0,0,0,0,0},
 };
 
+// sizeof(time_t) * NUM_TIMERS
 /*
 // C
 typedef struct {
@@ -232,6 +224,55 @@ void rolloControl(event_t event, unsigned char out_id, unsigned short delay);
 void setOutputs(void);
 void readSettingsFromEerpom(void);
 void saveSettingsInEeprom(void);
+
+void print_TimerEvents() {
+	int size = NUM_TIMERS, i, j;
+	time_t *tePtr = timeEvents;
+	for (i = 0; i < size; i++) {
+		if (tePtr->days != 0) {
+
+			UARTprintf("%d %02d:%02d ", i, tePtr->secOfDay/3600,
+										  (tePtr->secOfDay % 3600) / 60);
+			if (tePtr->days == MO_FR)
+				UARTprintf("MO-FR ");
+			else if (tePtr->days == WE)
+				UARTprintf("WE    ");
+			else {
+				if (tePtr->days & MO)
+					UARTprintf("MO ");
+				if (tePtr->days & DI)
+					UARTprintf("DI ");
+				if (tePtr->days & MI)
+					UARTprintf("MI ");
+				if (tePtr->days & DO)
+					UARTprintf("DO ");
+				if (tePtr->days & FR)
+					UARTprintf("FR ");
+				if (tePtr->days & SA)
+					UARTprintf("SA ");
+				if (tePtr->days & SO)
+					UARTprintf("SO ");
+			}
+
+			if (tePtr->event == EVT_UP)
+				UARTprintf("hoch   ");
+			else
+				UARTprintf("runter ");
+
+			if (tePtr->outputs == OUT_ALLE)
+				UARTprintf("Alles  ");
+			else if (tePtr->outputs == OUT_TUEREN)
+				UARTprintf("Tueren ");
+			else {
+				for (j = 0; j < NUM_OUTPUTS; j++)
+					if ((1 << j) & tePtr->outputs)
+						UARTprintf("%s", output[j].name);
+			}
+		}
+		tePtr++;
+	}
+}
+
 
 static inline unsigned char GetBit(unsigned char bitfield, unsigned char bit) {
     if (bit < 8)        
@@ -370,10 +411,11 @@ void setEvent(event_t event, unsigned long outputs, char *name) {
 #endif
 }
 
-void setOutputs(void) {
 #ifdef REDUCE_RELAY_TRAFIC
-    static unsigned long outputsOld = 0xFFFFF, intTime = 0;
-#endif    
+    unsigned long outputsOld = 0xFFFFF, intTime = 0;
+#endif
+
+void setOutputs(void) {
 	unsigned long val = ~outputs, i;
 #ifdef REDUCE_RELAY_TRAFIC 
     if (outputs == outputsOld && intTime < 100)  {
@@ -381,7 +423,14 @@ void setOutputs(void) {
 		return;
 	}
 	intTime = 0;
-#endif	
+#endif
+	PORTB &= ~P_SER;
+	PORTD &= ~P_SCK;
+	wait();
+	PORTD |= P_SCK;
+	wait();
+	PORTD &= ~P_SCK;
+	wait();
 	wait();
     for (i = 0; i < 32; i++) {
         if (val & 1)
@@ -542,7 +591,7 @@ void rolloControl(event_t event, unsigned char out_id, unsigned short delay) {
 
 		}
 	} else {
-        	//UARTprintf("OUTPUT Mode not implementetd only Rollo");
+        	UARTprintf("OUTPUT Mode not implementetd only Rollo");
 	}
 }
 
@@ -676,6 +725,10 @@ void serialControl(void) {
 			printTime();
 			break;
 
+		case 'T':
+			print_TimerEvents();
+			break;
+
 		case 'M':
 			timeDecMin();
 			printTime();
@@ -745,6 +798,9 @@ int main(void) {
 			//UARTprintf("%x\n", outputs);
 			setOutputs();
 			serialControl();
-		}
+#ifdef REDUCE_RELAY_TRAFIC
+			outputsOld = outputs;
+#endif
+	 	}
 	}
 }

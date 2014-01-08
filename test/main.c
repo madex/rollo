@@ -30,7 +30,7 @@ static inline void jsonPrintOutputs() {
     for (i = 0; i < NUM_OUTPUTS; i++) {
         if (i)
             printf(",");
-        printf("{\"name\":\"%s\",\"maxTime\":%d,\"id\":%d}\n", output[i].name, output[i].maxTime, i);
+        printf("{\"name\":\"%s\",\"maxTime\":%d,\"id\":%d,\"state\":%d}\n", output[i].name, output[i].maxTime, output[i].state, i);
     }
     printf("]\n");
 }
