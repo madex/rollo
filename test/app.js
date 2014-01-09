@@ -13,15 +13,15 @@ var jsonStore = {"timeEvents":[{"name":"WE Hoch","days":96,"event":"hoch","secou
 ],
 "time":{"secoundsOfDay":0,"weekDay":0},
 "outputs":[{"name":"Wohnzimmmer rechts","maxTime":3500,"id":5,"state":0}
-,{"name":"Gaeste WC","maxTime":2500,"id":5,"state":1}
-,{"name":"Kueche Fenster","maxTime":2500,"id":5,"state":2}
-,{"name":"Technik","maxTime":2500,"id":5,"state":3}
-,{"name":"Wohnzimmmer links","maxTime":3500,"id":5,"state":4}
-,{"name":"Kueche Tuer","maxTime":3500,"id":5,"state":5}
-,{"name":"Eltern","maxTime":2500,"id":5,"state":6}
-,{"name":"Kind rechts","maxTime":2500,"id":5,"state":7}
-,{"name":"Kind links","maxTime":2500,"id":5,"state":8}
-,{"name":"Bad","maxTime":2500,"id":5,"state":9}]};
+,{"name":"Gaeste WC","maxTime":2500,"state":"oben"}
+,{"name":"Kueche Fenster","maxTime":2500,"state":"oben"}
+,{"name":"Technik","maxTime":2500,"state":"unten"}
+,{"name":"Wohnzimmmer links","maxTime":3500,"state":"unten"}
+,{"name":"Kueche Tuer","maxTime":3500,"state":"unten"}
+,{"name":"Eltern","maxTime":2500,"state":"gestoppt"}
+,{"name":"Kind rechts","maxTime":2500,"state":"f&auml;hrt hoch"}
+,{"name":"Kind links","maxTime":2500,"state":"f&auml;hrt runter"}
+,{"name":"Bad","maxTime":2500,"state":9}]};
 
 // Uhrzeit bearbeiten
 setInterval(function() {

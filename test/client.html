@@ -1145,24 +1145,42 @@ var myJson;
 function stellen() {
     ajax('?cmd=setTime&sod='+getCurSecOfDay()+'&weekDay='+getCurWeekDay(), updateJson);
 }
+function newEditTimeEvent() {
+
+}
+function showEditTimeEvent(id) {
+
+}
 function getTimerList(timerEvents) {
-    var t = '';
+    var t = '<table class="table_border table_border_cells table_stripes">';
     for (x in timerEvents) {
-        var tage;
-        if (x.days == 1|2|4|8|16)
+        var tage = '';
+        var elm = timerEvents[x];
+        if (elm.days == (1|2|4|8|16))
             tage = "Montag - Freitag";
         else {
             for (var i = 0; i < 7; i++) {
-                if (x.days | (1 << i)) {
-                    if (tage)
+                if (elm.days & (1 << i)) {
+                    if (tage != '')
                         tage += ', ';
                     tage += nameOfDay(i);
                 }
             }
         }
-        t += '<div class="rounded">'+x.name+'   '+nameOfDay+'    '+secOfDay2String(x.secoundsOfDay) + '</div>';
+        t += '<tr><td>' + ((elm.event=='hoch')?'&#x25B2;':'&#x25BC;')+'</td><td><a href="javascript:showEditTimeEvent('+x+')">'+
+             elm.name+'</a></td><td>'+tage+'</td><td>'+secOfDay2String(elm.secoundOfDay)+
+             '</td></tr>';
     }
-    return t;
+    return t + '</table><div class="text_center"><a href="javascript:newEditTimeEvent()" class="button button_rounded button_chunky button_primary font_xl">&nbsp;+&nbsp;</a></div>';
+}
+function getOutputList(outputs) {
+    var t = '<table class="table_border table_border_cells table_stripes">';
+    for (x in outputs) {
+        var elm = outputs[x];
+        t += '<tr><td>'+elm.name+'</td><td>'+elm.maxTime/100+' Sekunden</td><td>'+elm.state+'</td></tr>';
+
+    }
+    return t +'</table>';
 }
 
 function updateJson(resp) {
@@ -1173,7 +1191,7 @@ function updateJson(resp) {
     myClock.innerHTML = "Zeit der Steuerung:<br><b>" + nameOfDay(myJson.time.weekDay) + "  " + 
                         secOfDay2String(myJson.time.secoundsOfDay) + "</b>";
     TimeEvents.innerHTML = getTimerList(myJson.timeEvents);
-    Outputs.innerHTML = recursiveList(myJson);
+    Outputs.innerHTML = getOutputList(myJson.outputs);
 }
 setInterval(function() {
   	ajax('', updateJson);
@@ -1187,16 +1205,16 @@ setInterval(function() {
     
     <div class="grid text_center">
         <div id="Clock" class="grid-item one_half font_large" style="vertical-align:center"></div>
-        <div class="grid-item one_half"><a href="javascript:stellen()" type="submit" class="button button_rounded button_chunky button_primary font_xl">Stellen</a>
+        <div class="grid-item one_half"><a href="javascript:stellen()" class="button button_rounded button_chunky button_primary font_xl">Stellen</a>
         </div>
     </div>
     <p/>
     <h2 class="text_center well">Timer</h2>
-    <div id="TimeEvents" class="grid text_center font_large">
+    <div id="TimeEvents" class="wrapper font_large">
     </div>
     <p/>
-    <h2 class="text_center well">Ausg&auml;nge</h2>
-    <div id="Outputs" class="grid text_center font_large">
+    <h2 class="text_center well">Rollostatus</h2>
+    <div id="Outputs" class="text_center wrapper font_large">
     </div>
 </div>
 </html>
