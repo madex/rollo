@@ -4,12 +4,12 @@ var http = require('http'),
      
 var port = 1337;
 
-var jsonStore = {"timeEvents":[{"name":"WE Hoch","days":96,"event":"hoch","secoundOfDay":34200,"id":0}
-,{"name":"WE Runter","days":96,"event":"runter","secoundOfDay":64800,"id":1}
-,{"name":"Wochentags Hoch","days":31,"event":"hoch","secoundOfDay":27000,"id":2}
-,{"name":"Wochentags Runter","days":31,"event":"runter","secoundOfDay":64800,"id":3}
-,{"name":"WE Tueren","days":96,"event":"runter","secoundOfDay":61200,"id":4}
-,{"name":"Wochentags Tueren","days":31,"event":"runter","secoundOfDay":61200,"id":5}
+var jsonStore = {"timeEvents":[{"name":"WE Hoch","days":96,"out":1023,"event":"hoch","secoundOfDay":34200,"id":0}
+,{"name":"WE Runter","days":96,"event":"runter","out":1023,"secoundOfDay":64800,"id":1}
+,{"name":"Wochentags Hoch","days":31,"event":"hoch","out":1023,"secoundOfDay":27000,"id":2}
+,{"name":"Wochentags Runter","days":31,"event":"runter","out":1023,"secoundOfDay":64800,"id":3}
+,{"name":"WE Tueren","days":96,"event":"runter","out":1023,"secoundOfDay":61200,"id":4}
+,{"name":"Wochentags Tueren","days":31,"event":"runter","out":1023,"secoundOfDay":61200,"id":5}
 ],
 "time":{"secoundsOfDay":0,"weekDay":0},
 "outputs":[{"name":"Wohnzimmmer rechts","maxTime":3500,"id":5,"state":0}

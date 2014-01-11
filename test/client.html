@@ -1146,7 +1146,7 @@ function getCurWeekDay() {
 
 function secOfDay2String(sod) {                
 	var h = Math.floor(sod / 3600), min = Math.floor((sod % 3600) / 60), sec = sod % 60;
-	if (h < 10)   {h   = "0"+h;}
+	if (h   < 10) {h   = "0"+h;}
 	if (min < 10) {min = "0"+min;}
 	if (sec < 10) {sec = "0"+sec;}
 	return h + ":" + min + ":" + sec; 
@@ -1173,7 +1173,7 @@ function recursiveList(obj) {
 
 function ajax(urlVars, callback) {
     var httpRequest = new XMLHttpRequest();
-    httpRequest.onreadystatechange = function(){
+    httpRequest.onreadystatechange = function() {
         if (httpRequest.readyState === 4) {// request is done
             if (httpRequest.status === 200) {// successfully
                 callback(httpRequest.responseText);// we're calling our method
@@ -1197,6 +1197,26 @@ function showEditTimeEvent(id) {
     EditHour.value = Math.floor(sod / 3600);
     EditMin.value = Math.floor((sod % 3600) / 60);
     EditPage.style.display = "block";
+    if (tim.event == 'hoch')
+        myForm.richtung[0].checked = true;
+    else
+        myForm.richtung[1].checked = true;
+    var t = "";
+    daysCheck
+    for (var x = 0; x < 7; x++) {
+        t += '<tr><td class="text_right"><input type="checkbox" value="' + x +
+             '" class="font_large" '+((tim.days&(1<<x))?"checked":"")+' name="outputs">'+
+             '</td><td class="text_left">'+nameOfDay(x)+'</td></tr>';
+    }
+    daysCheck.innerHTML = t;
+    t = "";
+    for (var x = 0; x < myJson.outputs.length; x++) {
+        var out = myJson.outputs[x];
+        t += '<tr><td class="text_right"><input type="checkbox" value="' + x +
+             '" class="font_large" '+((tim.out&(1<<x))?"checked":"")+' name="outputs">'+
+             '</td><td class="text_left">'+out.name+'</td></tr>';
+    }
+    outCheck.innerHTML = t;
 }
 function getTimerList(timerEvents) {
     var t = '<table class="table_border table_border_cells table_stripes">';
@@ -1271,7 +1291,7 @@ setInterval(function() {
         </div>
     </div>
     <br>
-    <h2 class="text_center well">Timer</h2>
+    <h2 class="well text_center">Timer</h2>
     <div id="TimeEvents" class="wrapper font_large">
     </div>
     <p/>
@@ -1280,21 +1300,30 @@ setInterval(function() {
     </div>
     <!-- Berarbeitungs div -->
     <div id="EditPage" class="ui-page well out in">
+    <form name="myForm">
     <div class="header text_center"><h1 id="EditTitle" class="font_light"></h1></div>
     <br>
     <div class="grid text_center">
-        <div class="grid-item one_third font_large">Name</div>
+        <div class="grid-item one_third font_large text_right">Name</div>
         <div class="grid-item one_third"><input id="EditName" type="text"></div>
     </div>
     <br>
     <div class="grid text_center">
-        <div class="grid-item one_third font_large">Zeit</div>
-        <div class="grid-item one_third">
-            <span><input id="EditHour" style="width='11%'" type="number">&nbsp;
-            <input id="EditMin" style="width='11%'" type="number"></span>
+        <div class="grid-item one_third font_large text_right">Zeit</div>
+        <div class="grid-item one_third text_left">
+            <span><input id="EditHour" style="width:25%;display:inline-block;'" type="number">&nbsp;
+            <input id="EditMin" style="width:25%;display:inline-block;'" type="number"></span>
         </div>
     </div>
-
+    <br>
+    <div class="text_center">
+    <label class="font_large"><input type="radio" value='hoch' name="richtung">&#x25B2;</label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <label class="font_large"><input type="radio" value='runter' name="richtung">&#x25BC;</label>
+    </div>
+    <div class="grid text_center">
+    <div class="grid-item one_half"><table class="font_large" id="daysCheck"></table></div>
+    <div class="grid-item one_half"><table class="font_large" id="outCheck"></table></div>
+    </div>
     <br>
     <div class="grid text_center">
         <div class="grid-item one_fourth"><a href="javascript:delTimer()" class="button button_rounded button_chunky button_primary font_large">Entfernen</a>
@@ -1304,6 +1333,7 @@ setInterval(function() {
         <div class="grid-item one_fourth"><a href="javascript:saveTimer()" class="button button_rounded button_chunky button_primary font_large">Speichern</a>
         </div>
     </div>
+    </form>
     </div>
 </div>
 </html>
