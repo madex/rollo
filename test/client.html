@@ -1191,7 +1191,12 @@ function newEditTimeEvent() {
 
 }
 function showEditTimeEvent(id) {
-    EditPage.style("display:block");
+    var tim = myJson.timeEvents[id], sod = tim.secoundOfDay;
+    EditName.value = tim.name;
+    EditTitle.innerHTML = "Bearbeite Timer";
+    EditHour.value = Math.floor(sod / 3600);
+    EditMin.value = Math.floor((sod % 3600) / 60);
+    EditPage.style.display = "block";
 }
 function getTimerList(timerEvents) {
     var t = '<table class="table_border table_border_cells table_stripes">';
@@ -1229,7 +1234,7 @@ function saveTimer() {
     hide();
 }
 function hide() {
-    EditPage.style.cssText("display:none");
+    EditPage.style.display = "none";
 }
 function delTimer() {
     hide();
@@ -1273,13 +1278,23 @@ setInterval(function() {
     <h2 class="text_center well">Rollostatus</h2>
     <div id="Outputs" class="text_center wrapper font_large">
     </div>
+    <!-- Berarbeitungs div -->
     <div id="EditPage" class="ui-page well out in">
-    <div id="EditTitle" class="header text_center"><h1 class="font_light">Bearbeite Timer</h1></div>
+    <div class="header text_center"><h1 id="EditTitle" class="font_light"></h1></div>
     <br>
     <div class="grid text_center">
-    <div id="EditName" class="grid-item one_third font_large">Name</div>
-    <div class="grid-item one_third"><input type="text"></div>
+        <div class="grid-item one_third font_large">Name</div>
+        <div class="grid-item one_third"><input id="EditName" type="text"></div>
     </div>
+    <br>
+    <div class="grid text_center">
+        <div class="grid-item one_third font_large">Zeit</div>
+        <div class="grid-item one_third">
+            <span><input id="EditHour" style="width='11%'" type="number">&nbsp;
+            <input id="EditMin" style="width='11%'" type="number"></span>
+        </div>
+    </div>
+
     <br>
     <div class="grid text_center">
         <div class="grid-item one_fourth"><a href="javascript:delTimer()" class="button button_rounded button_chunky button_primary font_large">Entfernen</a>
