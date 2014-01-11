@@ -192,6 +192,52 @@ body {
 	font-family: "Helvetica Neue", Arial, sans-serif;
 	line-height: 1.5; /* 3 */
 }
+.ui-mobile-viewport {
+    margin: 0;
+    overflow-x: visible;
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: none;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0)
+}
+
+body.ui-mobile-viewport, div.ui-mobile-viewport {
+    overflow-x: hidden
+}
+
+.ui-mobile [data-role=page], .ui-mobile [data-role=dialog], .ui-page {
+    top: 0;
+    left: 0;
+    width: 100%;
+    min-height: 100%;
+    position: absolute;
+    display: none;
+    border: 0
+}
+
+.ui-mobile .ui-page-active {
+    display: block;
+    overflow: visible
+}
+
+.ui-page {
+    outline: none;
+    opacity: 70
+}
+
+
+.in {
+    -webkit-animation-timing-function: ease-out;
+    -webkit-animation-duration: 350ms;
+    -moz-animation-timing-function: ease-out;
+    -moz-animation-duration: 350ms
+}
+
+.out {
+    -webkit-animation-timing-function: ease-in;
+    -webkit-animation-duration: 225ms;
+    -moz-animation-timing-function: ease-in;
+    -moz-animation-duration: 225ms
+}
 
 abbr,
 acronym,
@@ -1145,7 +1191,7 @@ function newEditTimeEvent() {
 
 }
 function showEditTimeEvent(id) {
-    
+    EditPage.style("display:block");
 }
 function getTimerList(timerEvents) {
     var t = '<table class="table_border table_border_cells table_stripes">';
@@ -1173,12 +1219,21 @@ function getOutputList(outputs) {
     var t = '<table class="table_border table_border_cells table_stripes">';
     for (x in outputs) {
         var elm = outputs[x];
-        t += '<tr><td>'+elm.name+'</td><td>'+elm.maxTime/100+' Sekunden</td><td>'+elm.state+'</td></tr>';
-
+        t += '<tr><td>'+elm.name+'</td><td>'+elm.maxTime/100+' s</td><td>'+elm.state+'</td><td>'+
+            '<a href="javascript:ajax('+"'?cmd=up&out="+(1<<x)+"'"+', updateJson)"+" class="button button_rounded button_chunky button_primary font_large">&#x25B2;</a>&nbsp&nbsp'+
+            '<a href="javascript:ajax('+"'?cmd=down&out="+(1<<x)+"'"+', updateJson)"+" class="button button_rounded button_chunky button_primary font_large">&#x25BC;</a></td></tr>';
     }
     return t +'</table>';
 }
-
+function saveTimer() {
+    hide();
+}
+function hide() {
+    EditPage.style.cssText("display:none");
+}
+function delTimer() {
+    hide();
+}
 function updateJson(resp) {
     myJson = JSON.parse(resp);  
     var myClock = document.getElementById("Clock");
@@ -1198,7 +1253,6 @@ setInterval(function() {
     <header class="text_center well" role="header">
         <h1 class="masthead-title font_light">Rolladensteuerung</h1>
     </header>
-    
     <div class="grid text_center">
         <div id="Clock" class="grid-item one_fourth font_large"></div>
         <div class="grid-item one_fourth"><a href="javascript:stellen()" class="button button_rounded button_chunky button_primary font_large">Stellen</a>
@@ -1219,9 +1273,22 @@ setInterval(function() {
     <h2 class="text_center well">Rollostatus</h2>
     <div id="Outputs" class="text_center wrapper font_large">
     </div>
-    <div class="content" style="width:80%,,position:absolute,display:block">
-        llkasdjflkjlkwejr
-        
+    <div id="EditPage" class="ui-page well out in">
+    <div id="EditTitle" class="header text_center"><h1 class="font_light">Bearbeite Timer</h1></div>
+    <br>
+    <div class="grid text_center">
+    <div id="EditName" class="grid-item one_third font_large">Name</div>
+    <div class="grid-item one_third"><input type="text"></div>
+    </div>
+    <br>
+    <div class="grid text_center">
+        <div class="grid-item one_fourth"><a href="javascript:delTimer()" class="button button_rounded button_chunky button_primary font_large">Entfernen</a>
+        </div>
+        <div class="grid-item one_fourth"><a href="javascript:hide()" class="button button_rounded button_chunky button_primary font_large">Abbrechen</a>
+        </div>
+        <div class="grid-item one_fourth"><a href="javascript:saveTimer()" class="button button_rounded button_chunky button_primary font_large">Speichern</a>
+        </div>
+    </div>
     </div>
 </div>
 </html>
