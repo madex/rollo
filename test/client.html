@@ -870,7 +870,7 @@ table td {
 .grid-item {
 	display: inline-block;
 	padding-left: 2rem;  /* 1 */
-	vertical-align: middle; /* 2 */
+	vertical-align: top; /* 2 */
 	font-size: 1rem;     /* 3 */
 }
 
@@ -1125,10 +1125,6 @@ function recursiveList(obj) {
 	return t;	
 }
 
-/*
-/ajax?cmd=setTime&sod=20344&weekDay=3
-*/
-
 function ajax(urlVars, callback) {
     var httpRequest = new XMLHttpRequest();
     httpRequest.onreadystatechange = function(){
@@ -1149,7 +1145,7 @@ function newEditTimeEvent() {
 
 }
 function showEditTimeEvent(id) {
-
+    
 }
 function getTimerList(timerEvents) {
     var t = '<table class="table_border table_border_cells table_stripes">';
@@ -1188,8 +1184,8 @@ function updateJson(resp) {
     var myClock = document.getElementById("Clock");
     var myJSONView = document.getElementById("JSON-View");
 
-    myClock.innerHTML = "Zeit der Steuerung:<br><b>" + nameOfDay(myJson.time.weekDay) + "  " + 
-                        secOfDay2String(myJson.time.secoundsOfDay) + "</b>";
+    myClock.innerHTML = "<h4>" + nameOfDay(myJson.time.weekDay) + "  " +
+                        secOfDay2String(myJson.time.secoundsOfDay) + "</h4>";
     TimeEvents.innerHTML = getTimerList(myJson.timeEvents);
     Outputs.innerHTML = getOutputList(myJson.outputs);
 }
@@ -1204,17 +1200,28 @@ setInterval(function() {
     </header>
     
     <div class="grid text_center">
-        <div id="Clock" class="grid-item one_half font_large" style="vertical-align:center"></div>
-        <div class="grid-item one_half"><a href="javascript:stellen()" class="button button_rounded button_chunky button_primary font_xl">Stellen</a>
+        <div id="Clock" class="grid-item one_fourth font_large"></div>
+        <div class="grid-item one_fourth"><a href="javascript:stellen()" class="button button_rounded button_chunky button_primary font_large">Stellen</a>
         </div>
     </div>
-    <p/>
+    <br>
+    <div class="grid text_center">
+        <div class="grid-item one_fourth"><a href="javascript:ajax('?cmd=up&out=1023', updateJson)" class="button button_rounded button_chunky button_primary font_large">&#x25B2; Alle</a>
+        </div>
+        <div class="grid-item one_fourth"><a href="javascript:ajax('?cmd=down&out=1023', updateJson)" class="button button_rounded button_chunky button_primary font_large">&#x25BC; Alle</a>
+        </div>
+    </div>
+    <br>
     <h2 class="text_center well">Timer</h2>
     <div id="TimeEvents" class="wrapper font_large">
     </div>
     <p/>
     <h2 class="text_center well">Rollostatus</h2>
     <div id="Outputs" class="text_center wrapper font_large">
+    </div>
+    <div class="content" style="width:80%,,position:absolute,display:block">
+        llkasdjflkjlkwejr
+        
     </div>
 </div>
 </html>
