@@ -1188,12 +1188,21 @@ function stellen() {
     ajax('?cmd=setTime&sod='+getCurSecOfDay()+'&weekDay='+getCurWeekDay(), updateJson);
 }
 function newEditTimeEvent() {
-
+    showEditTimeEvent("new");
 }
 function showEditTimeEvent(id) {
-    var tim = myJson.timeEvents[id], sod = tim.secoundOfDay;
+    var tim, sod = 0;
+    if (id !== "new" && id <= myJson.timeEvents.length && id >= 0) {
+        tim = myJson.timeEvents[id];
+        sod = tim.secoundOfDay;
+        EditTitle.innerHTML = "Bearbeite Timer";
+    } else {
+        tim = {"days":0,"outputs":0,"name":"Neuer Timer"};
+        EditTitle.innerHTML = "Neuen Timer erstellen";
+    }
+    
     EditName.value = tim.name;
-    EditTitle.innerHTML = "Bearbeite Timer";
+    
     EditHour.value = Math.floor(sod / 3600);
     EditMin.value = Math.floor((sod % 3600) / 60);
     EditPage.style.display = "block";
@@ -1202,10 +1211,10 @@ function showEditTimeEvent(id) {
     else
         myForm.richtung[1].checked = true;
     var t = "";
-    daysCheck
+    timerId.text = id;
     for (var x = 0; x < 7; x++) {
         t += '<tr><td class="text_right"><input type="checkbox" value="' + x +
-             '" class="font_large" '+((tim.days&(1<<x))?"checked":"")+' name="outputs">'+
+             '" class="font_large" '+((tim.days&(1<<x))?"checked":"")+' name="days">'+
              '</td><td class="text_left">'+nameOfDay(x)+'</td></tr>';
     }
     daysCheck.innerHTML = t;
@@ -1251,12 +1260,26 @@ function getOutputList(outputs) {
     return t +'</table>';
 }
 function saveTimer() {
+    var newOutputs=0, newDays=0;
+    for (var x = 0; x < 7; x++) {
+        if (myForm.days[x].checked)
+            newDays |= (1 << x);
+    }
+    for (var x = 0; x < myJson.outputs.length; x++) {
+        if (myForm.outputs[x].checked)
+            newOutputs |= (1 << x);
+    }
+    var newSod = EditHour.value*60*60 + EditMin.value*60;
+    var newName = "";
+    newName = "&name="+EditName.value;
+    ajax("?cmd=timer&id="+timerId.text+"&out="+newOutputs+"&days="+newDays+"&sod="+newSod+newName, updateJson);
     hide();
 }
 function hide() {
     EditPage.style.display = "none";
 }
 function delTimer() {
+    ajax("?cmd=delTimer&id="+timerId.text, updateJson);
     hide();
 }
 function updateJson(resp) {
@@ -1315,7 +1338,7 @@ setInterval(function() {
             <input id="EditMin" style="width:25%;display:inline-block;'" type="number"></span>
         </div>
     </div>
-    <br>
+    <br><input id="timerId" type="hidden">
     <div class="text_center">
     <label class="font_large"><input type="radio" value='hoch' name="richtung">&#x25B2;</label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     <label class="font_large"><input type="radio" value='runter' name="richtung">&#x25BC;</label>
