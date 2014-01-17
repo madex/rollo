@@ -4,6 +4,17 @@
 #include "../rollo.c"
 #undef main
 
+char test1 = "/ajax?cmd=timer&id=2&out=1023&days=31&sod=27000&name=Wochentags%20Hoch%20kl";
+char test2 = "/ajax?cmd=down&out=1";
+char test3 = "/ajax?cmd=timer&id=new&out=256&days=0&sod=0&name=Neuer%20Timer";
+char test4 = "/ajax";
+char test5 = "/ajax?cmd=up&out=1023";
+char test6 = "/ajax?cmd=down&out=1023";
+char test7 = "/ajax?cmd=setTime&sod=85723&weekDay=3";
+
+
+
+
 static inline void jsonPrintTimeEvents() {
     int i;
     printf("\"timeEvents\":[");

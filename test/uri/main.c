@@ -33,45 +33,45 @@ typedef enum {
 	VALUE
 } parseState_t;
 
-int decodeString(char *dest, char *src, unsigned int len) {
+void decodeString(char *dest, char *src, unsigned int len) {
 	char c;
 	while ((c = *src++) && len--) {
 		if (c == '%') {
-			if (strncmp(src, "20", 2) == 0 && len > 2) {
+			if (strncmp(src, "20", 2) == 0 && len >= 2) {
 				*dest++ = ' ';
 				len -= 2;
 				src += 2;
-			} else if (strncmp(src, "C3%84;", 5) == 0 && len > 5) {
+			} else if (strncmp(src, "C3%84;", 5) == 0 && len >= 5) {
 			    *dest++ = 'A';
 			    *dest++ = 'e';
 			    len -= 5;
 				src += 5;
-			}  else if (strncmp(src, "C3%9C;", 5) == 0 && len > 5) {
+			}  else if (strncmp(src, "C3%9C;", 5) == 0 && len >= 5) {
 			    *dest++ = 'U';
 			    *dest++ = 'e';
 			    len -= 5;
 				src += 5;
-			} else if (strncmp(src, "C3%96;", 5) == 0 && len > 5) {
+			} else if (strncmp(src, "C3%96;", 5) == 0 && len >= 5) {
 			    *dest++ = 'O';
 			    *dest++ = 'e';
 			    len -= 5;
 				src += 5;
-			} else if (strncmp(src, "C3%A4;", 5) == 0 && len > 5) {
+			} else if (strncmp(src, "C3%A4;", 5) == 0 && len >= 5) {
 			    *dest++ = 'a';
 			    *dest++ = 'e';
 			    len -= 5;
 				src += 5;
-			} else if (strncmp(src, "C3%BC;", 5) == 0 && len > 5) {
+			} else if (strncmp(src, "C3%BC;", 5) == 0 && len >= 5) {
 			    *dest++ = 'u';
 			    *dest++ = 'e';
 			    len -= 5;
 				src += 5;
-			} else if (strncmp(src, "C3%B6;", 5) == 0 && len > 5) {
+			} else if (strncmp(src, "C3%B6;", 5) == 0 && len >= 5) {
 			    *dest++ = 'o';
 			    *dest++ = 'e';
 			    len -= 5;
 				src += 5;
-			} else if (strncmp(src, "C3%9F;", 5) == 0 && len > 5) {
+			} else if (strncmp(src, "C3%9F;", 5) == 0 && len >= 5) {
 			    *dest++ = 's';
 			    *dest++ = 's';
 			    len -= 5;
@@ -127,7 +127,7 @@ int parseUri(char *uri, int len, uriParse_t *ps) {
 					st = PARAM_START;
 					ps->length++;
 					if (ps->length == MAX_ELEMETS)
-                        return;
+                        return 0;
 				}
 				break;
 		}
@@ -184,4 +184,5 @@ int main() {
     printf("\ntest9 = %s\n", test9);
     if (parseUri(test9, strlen(test9), &u))
     	printParams(&u);
+    return 0;
 }
