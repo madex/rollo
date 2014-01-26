@@ -4,17 +4,6 @@
 #include "../rollo.c"
 #undef main
 
-char test1 = "/ajax?cmd=timer&id=2&out=1023&days=31&sod=27000&name=Wochentags%20Hoch%20kl";
-char test2 = "/ajax?cmd=down&out=1";
-char test3 = "/ajax?cmd=timer&id=new&out=256&days=0&sod=0&name=Neuer%20Timer";
-char test4 = "/ajax";
-char test5 = "/ajax?cmd=up&out=1023";
-char test6 = "/ajax?cmd=down&out=1023";
-char test7 = "/ajax?cmd=setTime&sod=85723&weekDay=3";
-
-
-
-
 static inline void jsonPrintTimeEvents() {
     int i;
     printf("\"timeEvents\":[");
@@ -57,11 +46,17 @@ static inline void makeJson() {
 START_TESTS()
 
 START_TEST("make json")
-    makeJson();
+    //makeJson();
 END_TEST()
 
-START_TEST("make json")
-    
+START_TEST("time")
+ASSERT_EQUALS(secoundsOfDay, 0);
+ASSERT_EQUALS(weekDay, 0);
+
+for (long i = 0; i < 1000*60*60*24; i++)
+    SysTickHandler();
+ASSERT_EQUALS(secoundsOfDay, 0);
+ASSERT_EQUALS(weekDay, 1);
 END_TEST()
 
 END_TESTS()

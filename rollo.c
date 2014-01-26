@@ -37,18 +37,19 @@ volatile unsigned int timeInMs;
 volatile unsigned char weekDay; // 0 montag 1 dienstag
 unsigned long outputs;
 
-#define P_SER   GPIO_PIN_5 // PORTB
+#define P_SER_O GPIO_PIN_5 // PORTB
+#define P_SER_I GPIO_PIN_3 // PORTD
 #define P_RCK_O GPIO_PIN_6 // PORTB
-#define P_SCK   GPIO_PIN_0 // PORTD
+#define P_SCK_O GPIO_PIN_0 // PORTD
+#define P_SCK_I GPIO_PIN_4 // PORTD
 #define P_RCK_I GPIO_PIN_7 // PORTA
 
-// PORTA
-#define IN_H1  2  // I1 PORTD
-#define IN_R1  6  // I2
-#define IN_H2  3  // I3
-#define IN_R2  2  // I4
-#define IN_H3  5  // I5
-#define IN_R3  4  // I6
+#define IN_H1  2  // I1 PORTD 2
+#define IN_R1  6  // I2 PORTA 6
+#define IN_H2  3  // I3 PORTA 3
+#define IN_R2  2  // I4 PORTA 2
+#define IN_H3  5  // I5 PORTA 5
+#define IN_R3  4  // I6 PORTA 4
 
 // A
 typedef enum {
@@ -95,33 +96,32 @@ time_t timeEvents[NUM_TIMERS] = {
 {MO_FR, SET_TIME(18,00), EVT_DOWN, OUT_ALLE,   "Wochentags Runter"},
 {WE,    SET_TIME(17,00), EVT_DOWN, OUT_TUEREN, "WE Tueren"},
 {MO_FR, SET_TIME(17,00), EVT_DOWN, OUT_TUEREN, "Wochentags Tueren"},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
-{0,0,0,0,0},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
+{0,0,0,0,""},
 };
 
 // sizeof(time_t) * NUM_TIMERS
@@ -346,21 +346,21 @@ void readInputs(void) {
 	unsigned char row, i, val, changes;
 	input_t *in_ptr = inputs;
 	// 6 nullen laden
-	PORTB &= ~P_SER;
+	PORTB &= ~P_SER_I;
 	for (i = 0; i < 6; i++) {
 		wait();
-		PORTD |= P_SCK;
+		PORTD |= P_SCK_I;
 		wait();
-		PORTD &= ~P_SCK;
+		PORTD &= ~P_SCK_I;
 	}
-	PORTB |= P_SER;
+	PORTD |= P_SER_I;
 	wait();
 	for (row = 0; row < 6; row++) {
-		PORTD |= P_SCK;
+		PORTD |= P_SCK_I;
 		wait();
 		PORTA |= P_RCK_I;
-		PORTD &= ~P_SCK;
-		PORTB &= ~P_SER;
+		PORTD &= ~P_SCK_I;
+		PORTD &= ~P_SER_I;
 
 	 	wait();
 
@@ -384,9 +384,9 @@ void readInputs(void) {
 
     }	
 	// Am ende strom sparen
-	PORTD |= P_SCK;
+	PORTD |= P_SCK_I;
 	wait();
-	PORTD &= ~P_SCK;
+	PORTD &= ~P_SCK_I;
 	wait();
 	PORTA |= P_RCK_I;
 	wait();
@@ -424,24 +424,24 @@ void setOutputs(void) {
 	}
 	intTime = 0;
 #endif
-	PORTB &= ~P_SER;
-	PORTD &= ~P_SCK;
+	PORTB &= ~P_SER_O;
+	PORTD &= ~P_SCK_O;
 	wait();
-	PORTD |= P_SCK;
+	PORTD |= P_SCK_O;
 	wait();
-	PORTD &= ~P_SCK;
+	PORTD &= ~P_SCK_O;
 	wait();
 	wait();
     for (i = 0; i < 32; i++) {
         if (val & 1)
-        	PORTB |= P_SER;
+        	PORTB |= P_SER_O;
         else
-        	PORTB &= ~P_SER;
+        	PORTB &= ~P_SER_O;
 
-    	PORTD |= P_SCK;
+    	PORTD |= P_SCK_O;
     	wait();
         val >>= 1;
-        PORTD &= ~P_SCK;
+        PORTD &= ~P_SCK_O;
         wait();
     }
     PORTB |= P_RCK_O;
@@ -550,6 +550,7 @@ void rolloControl(event_t event, unsigned char out_id, unsigned short delay) {
 			out->state = DOWN;
 			outputs &= ~OUT(out->outUpOrOn);
 			UARTprintf("DOWN_START out %s (%d)\n", out->name, out_id);
+			/*FALLTHROUGH*/
 		case DOWN:
 			switch (event) {
 			case EVT_UP:
@@ -574,6 +575,7 @@ void rolloControl(event_t event, unsigned char out_id, unsigned short delay) {
 			out->timer = 0;
 			out->state = STOP;
 			UARTprintf("STOP_START out %s (%d)\n", out->name, out_id);
+			/*FALLTHROUGH*/
 		case STOP:
 			switch (event) {
 			case EVT_UP:
@@ -591,7 +593,7 @@ void rolloControl(event_t event, unsigned char out_id, unsigned short delay) {
 
 		}
 	} else {
-        	UARTprintf("OUTPUT Mode not implementetd only Rollo");
+        	//UARTprintf("OUTPUT Mode not implementetd only Rollo");
 	}
 }
 
@@ -772,12 +774,12 @@ int main(void) {
 	GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, OUT(IN_R1) | OUT(IN_H2) | OUT(IN_R2) | OUT(IN_H3) | OUT(IN_R3));
 	GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, OUT(IN_H1));
 	GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, P_RCK_I);
-	GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, P_SER | P_RCK_O);
+	GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, P_SER_O | P_RCK_O);
 
-	GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, P_SCK | OUT(3));
+	GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, P_SCK_O | P_SCK_I | P_SER_I | OUT(3));
 	SysTickIntRegister(SysTickHandler);
 	UARTEchoSet(false);
-	UARTprintf("\nRollocontrol v0.2 (Martin Ongsiek)\n");
+	UARTprintf("\nRollocontrol v0.3 (Martin Ongsiek)\n");
     readSettingsFromEerpom();
 #ifdef INITAL_RELAY_TEST
     for (i = 0; i < 32; i++) {
