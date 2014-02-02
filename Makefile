@@ -44,12 +44,21 @@ cleanRelease: clean
 #
 # Where to find source files that do not live in this directory.
 #
-VPATH=${ROOT}/utils
+VPATH += ${ROOT}/third_party/lwip-1.3.2/apps/httpserver_raw
+VPATH += ${ROOT}/utils
 
 #
 # Where to find header files that do not live in the source directory.
 #
-IPATH=${ROOT}
+IPATH+=.
+IPATH+=${ROOT}/third_party/lwip-1.3.2/apps
+IPATH+=${ROOT}/third_party/lwip-1.3.2/ports/stellaris/include
+IPATH+=${ROOT}/third_party/lwip-1.3.2/src/include
+IPATH+=${ROOT}/third_party/lwip-1.3.2/src/include/ipv4
+IPATH+=${ROOT}/third_party
+
+AFLAGS+=${patsubst %,-I%,${subst :, ,${IPATH}}}
+CFLAGS+=${patsubst %,-I%,${subst :, ,${IPATH}}}
 
 TARGET=rollo
 
@@ -64,6 +73,9 @@ debugc: gcc/${TARGET}.axf
 serial:
 	picocom -b 115200 -f n -d 8 -p n /dev/cu.usbserial-0B010169B
 
+io_fsdata.h: fs/index.html
+	${ROOT}/tools/makefsfile/makefsfile.exe -i fs -o io_fsdata.h -r -h
+
 all: gcc
 all: gcc/${TARGET}.axf
 all: gcc/${TARGET}.lst
@@ -74,10 +86,11 @@ clean:
 gcc:
 	@mkdir gcc
 		
-ANIM_OBJ  = startup_gcc.o rollo.o uartstdio.o flash_pb.c 
-OBJ = $(patsubst %.o,gcc/%.o,$(ANIM_OBJ))
+OBJ  = startup_gcc.o rollo.o uartstdio.o flash_pb.c 
+OBJ += httpd.o lmi_fs.o locator.o lwiplib.o ustdlib.o io.o
+GOBJ = $(patsubst %.o,gcc/%.o,$(OBJ))
 
-gcc/${TARGET}.axf: $(OBJ)
+gcc/${TARGET}.axf: $(GOBJ)
 gcc/${TARGET}.axf: ${ROOT}/driverlib/gcc/libdriver.a
 gcc/${TARGET}.axf: ${TARGET}.ld
 
