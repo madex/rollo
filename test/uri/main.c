@@ -143,6 +143,30 @@ int parseUri(char *uri, int len, uriParse_t *ps) {
 	return 1;
 }
 
+unsigned char parameterNameEqual(unsigned char paraIdx,
+                                 uriParse_t *u,
+                                 const char *compareName) {
+    if (!u || !u->uriString || !compareName || paraIdx >= u->length)
+		return 0;
+    return strncmp(&(u->uriString[(u->elem[paraIdx]).para_off]),
+                   compareName, (u->elem[paraIdx]).para_len) == 0;
+}
+
+unsigned short getParameterValue(unsigned char paraIdx,
+                                uriParse_t *u,
+                                unsigned char *error) {
+    unsigned char temp;
+    if (!error)
+        error = &temp;
+    if (!u || !u->uriString || paraIdx >= u->length) {
+		*error = 1;
+        return 0;
+    }
+    *error = 0;
+    return strtol(&(u->uriString[(u->elem[paraIdx]).value_off]), 0, 10);
+}
+
+
 void printParams(uriParse_t *u) {
 	int i;
 	char help[100], help2[100];
@@ -158,9 +182,18 @@ void printParams(uriParse_t *u) {
 int main() {
     uriParse_t u;
     char help[80];
+    unsigned char error;
     printf("\ntest1 = %s\n", test1);
     if (parseUri(test1, strlen(test1), &u))
     	printParams(&u);
+    if (!parameterNameEqual(0, &u, "cmd"))
+        printf("Error ");
+    if (parameterNameEqual(1, &u, "cmd"))
+        printf("Error ");
+    if (!parameterNameEqual(1, &u, "sod"))
+        printf("Error ");
+    if (getParameterValue(1, &u, &error) == 50226)
+        printf("getParameterValue ok ");
     printf("\ntest2 = %s\n", test2);
     if (parseUri(test2, strlen(test2), &u))
     	printParams(&u);

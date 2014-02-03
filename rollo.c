@@ -17,6 +17,7 @@
 //#define DEBUG
 #define NUM_INPUTS    36
 #define NUM_TIMERS    32
+#define NUM_OUTPUTS   10
 #define DEBOUNCE_TIME  5
 
 #define PORTA GPIO_PORTA_DATA_R
@@ -185,20 +186,24 @@ unsigned char inputs_new[6], inputs_debounced[6];
 /**
  * Reads multiplexed inputs, debounce intputs and generate Events. 
  */ 
-void readInputs(void);
+static void readInputs(void);
 
 /**
  * If the current time is in the timeEvents array defiened it generates a 
  * event.
  */  
-void timeManager(void);
+static void timeManager(void);
 
 /**
  * Sets outputshiftregisters with gpio
  */ 
-void setOutputs(void);
+static void setOutputs(void);
+static void rolloControl(event_t event, unsigned char out_id, unsigned short delay);
+void SysTickHandler(void);
+static void serialControl(void);
 
-void print_TimerEvents() {
+
+static void print_TimerEvents() {
 	int size = NUM_TIMERS, i, j;
 	time_t *tePtr = timeEvents;
 	for (i = 0; i < size; i++) {
@@ -290,6 +295,9 @@ static void procInput(input_t *input,
     }
 }
 
+/**
+ * Wait loop, optimiesed for gpio serial loading
+ */
 static void wait() {
 	int i;
 	for (i = 0; i < 11; i++) {
@@ -315,7 +323,15 @@ static void wait() {
 	}
 }
 
-void readInputs(void) {
+/* not used
+static void setTime(unsigned char hour, unsigned char min, unsigned char day) {
+    if (hour > 23 || min > 59 || day > 6)
+        return;
+    secoundsOfDay = SET_TIME(hour, min);
+    weekDay       = day;
+} */
+
+static void readInputs(void) {
 	unsigned char row, i, val, changes;
 	input_t *in_ptr = inputs;
 	// 6 nullen laden
@@ -364,7 +380,6 @@ void readInputs(void) {
 	PORTA |= P_RCK_I;
 	wait();
 	PORTA &= ~P_RCK_I;
-
 	//UARTprintf("inputs_new %02x %02x %02x %02x %02x %02x\n",
 	//            inputs_new[0], inputs_new[1], inputs_new[2], inputs_new[3], inputs_new[4], inputs_new[5]);
 }
@@ -412,17 +427,9 @@ void setOutputs(void) {
 }
 
 
-
 void setTimeSod(unsigned short sod, unsigned char day) {
 	secoundsOfDay = sod;
 	weekDay       = day;
-}
-
-static void setTime(unsigned char hour, unsigned char min, unsigned char day) {
-    if (hour > 23 || min > 59 || day > 6)
-        return;
-    secoundsOfDay = SET_TIME(hour, min);
-    weekDay       = day;
 }
 
 void readSettingsFromEerpom(void) {
@@ -470,7 +477,7 @@ void rollo_init(void) {
 	outputs = 0;
 }
 
-void switchPowerOff(output_t *out) {
+static void switchPowerOff(output_t *out) {
 	if (outputs & OUT(out->outPower)) { 
 		outputs &= ~OUT(out->outPower);
 		outputs &= ~OUT(out->outUpOrOn);
@@ -478,7 +485,7 @@ void switchPowerOff(output_t *out) {
 	}
 }    
 
-void rolloControl(event_t event, unsigned char out_id, unsigned short delay) {
+static void rolloControl(event_t event, unsigned char out_id, unsigned short delay) {
 	output_t *out;
 	if (out_id >= NUM_OUTPUTS)
 		return;
@@ -650,15 +657,15 @@ void SysTickHandler(void) {
    timeOverflowCorrecter();
 }
 
-char getHour(int secOD) {
+static char getHour(int secOD) {
 	return secOD / (60*60);
 }
 
-char getMin(int secOD) {
+static char getMin(int secOD) {
 	return (secOD % (60*60)) / 60; 
 }
 
-void timeIncMin(void) {
+static void timeIncMin(void) {
     secoundsOfDay += 60;
 	timeOverflowCorrecter();
 } 
@@ -714,7 +721,7 @@ void printTime(void) {
 	UARTprintf("\r\n");
 }
 
-void serialControl(void) {
+static void serialControl(void) {
 	while (UARTRxBytesAvail()) {
 		switch (UARTgetc()) {
 

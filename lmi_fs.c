@@ -44,6 +44,180 @@
 #include "io_fsdata.h"
 
 
+#define MAX_ELEMETS 10
+
+typedef struct {
+	unsigned int para_off, para_len;
+	unsigned int value_off, value_len;
+} uriParseElement_t;
+
+typedef struct {
+	unsigned char length;
+	char *uriString;
+	uriParseElement_t elem[MAX_ELEMETS];
+} uriParse_t;
+
+typedef enum {
+	PARAM_START,
+	PARAM,
+	VALUE_START,
+	VALUE
+} parseState_t;
+
+int atoi(const char *c) {
+    int result = 0;
+    int sign;
+    
+    if (c && *c == '-') {
+        sign = -1;
+        c++;
+    } else {
+        sign = 1;
+    }
+    while (*c) {
+        if (*c < '0' || *c > '9') {
+            return result * sign;
+        }
+        result += *c - '0';
+        c++;
+    }
+    return result * sign;
+}
+
+void decodeString(char *dest, char *src, unsigned int len) {
+	char c;
+	while ((c = *src++) && len--) {
+		if (c == '%') {
+			if (strncmp(src, "20", 2) == 0 && len >= 2) {
+				*dest++ = ' ';
+				len -= 2;
+				src += 2;
+			} else if (strncmp(src, "C3%84;", 5) == 0 && len >= 5) {
+			    *dest++ = 'A';
+			    *dest++ = 'e';
+			    len -= 5;
+				src += 5;
+			}  else if (strncmp(src, "C3%9C;", 5) == 0 && len >= 5) {
+			    *dest++ = 'U';
+			    *dest++ = 'e';
+			    len -= 5;
+				src += 5;
+			} else if (strncmp(src, "C3%96;", 5) == 0 && len >= 5) {
+			    *dest++ = 'O';
+			    *dest++ = 'e';
+			    len -= 5;
+				src += 5;
+			} else if (strncmp(src, "C3%A4;", 5) == 0 && len >= 5) {
+			    *dest++ = 'a';
+			    *dest++ = 'e';
+			    len -= 5;
+				src += 5;
+			} else if (strncmp(src, "C3%BC;", 5) == 0 && len >= 5) {
+			    *dest++ = 'u';
+			    *dest++ = 'e';
+			    len -= 5;
+				src += 5;
+			} else if (strncmp(src, "C3%B6;", 5) == 0 && len >= 5) {
+			    *dest++ = 'o';
+			    *dest++ = 'e';
+			    len -= 5;
+				src += 5;
+			} else if (strncmp(src, "C3%9F;", 5) == 0 && len >= 5) {
+			    *dest++ = 's';
+			    *dest++ = 's';
+			    len -= 5;
+				src += 5;
+			}
+		} else
+			*dest++ = c;
+	}
+	*dest++ = 0;
+}
+
+
+int parseUri(char *uri, int len, uriParse_t *ps) {
+	unsigned int n = 0, valueLen;
+	char c;
+	parseState_t st = PARAM_START;
+	ps->uriString = uri;
+	ps->length = 0;
+	ps->elem[ps->length].para_off = 0;
+	if (strncmp(uri, "/ajax?", MIN(6, len)) != 0)
+		return 0; // fehler
+	if (len < 6)
+		return 0; // fehler
+	len -= 6;
+	n += 6;
+	while (len) {
+		c = uri[n];
+	    switch (st) {
+			case PARAM_START:
+				ps->elem[ps->length].para_off = n;
+				ps->elem[ps->length].para_len = 0;
+				ps->elem[ps->length].value_off = 0;
+				ps->elem[ps->length].value_len = 0;
+				st = PARAM;
+				valueLen = 0;
+				break;
+                
+			case PARAM:
+				if (c == '=') {
+					ps->elem[ps->length].para_len = valueLen;
+					st = VALUE_START;
+				}
+				break;
+                
+			case VALUE_START:
+				ps->elem[ps->length].value_off = n;
+				st = VALUE;
+				valueLen = 0;
+				break;
+                
+			case VALUE:
+				if (c == '&') {
+					ps->elem[ps->length].value_len = valueLen;
+					st = PARAM_START;
+					ps->length++;
+					if (ps->length == MAX_ELEMETS)
+                        return 0;
+				}
+				break;
+		}
+		n++;
+		valueLen++;
+		len--;
+	}
+	if (ps->elem[ps->length].value_len == 0 && ps->elem[ps->length].value_off) {
+		ps->elem[ps->length].value_len = valueLen;
+		ps->length++;
+	}
+	return 1;
+}
+
+unsigned char parameterNameEqual(unsigned char paraIdx,
+                                 uriParse_t *u,
+                                 const char *compareName) {
+    if (!u || !u->uriString || !compareName || paraIdx >= u->length)
+		return 0;
+    return strncmp(&(u->uriString[(u->elem[paraIdx]).para_off]),
+                   compareName, (u->elem[paraIdx]).para_len) == 0;
+}
+
+unsigned short getParameterValue(unsigned char paraIdx,
+                                 uriParse_t *u,
+                                 unsigned char *error) {
+    unsigned char temp;
+    if (!error)
+        error = &temp;
+    if (!u || !u->uriString || paraIdx >= u->length) {
+		*error = 1;
+        return 0;
+    }
+    *error = 0;
+    return atoi(&(u->uriString[(u->elem[paraIdx]).value_off]));
+}
+
+
 //*****************************************************************************
 //
 // Open a file and return a handle to the file, if found.  Otherwise,
@@ -53,12 +227,11 @@
 // example web page.
 //
 //*****************************************************************************
-struct fs_file *
-fs_open(char *name)
-{
+struct fs_file * fs_open(char *name) {
     const struct fsdata_file *ptTree;
     struct fs_file *ptFile = NULL;
-
+    uriParse_t u;
+    char help[80], error = 0;
     //
     // Allocate memory for the file system structure.
     //
@@ -67,7 +240,24 @@ fs_open(char *name)
     {
         return(NULL);
     }
-
+    
+    if (parseUri(name, strlen(name), &u)) {
+        if (!u || !u->uriString || !u->length)
+            return;
+        if (parameterNameEqual(0, &u, "cmd")) {
+            
+        }
+        
+        
+        for (i = 0; i < u->length; i++) {
+            decodeString(help, &(u->uriString[(u->elem[i]).para_off]),  (u->elem[i]).para_len);
+            decodeString(help2, &(u->uriString[(u->elem[i]).value_off]), (u->elem[i]).value_len);
+            printf("%s = %s\n", help, help2);
+        }
+        
+    }
+    
+    /*
     //
     // Process request to toggle STATUS LED
     //
@@ -153,7 +343,7 @@ fs_open(char *name)
     //
     // If I can't find it there, look in the rest of the main file system
     //
-    else
+    else */
     {
         //
         // Initialize the file system tree pointer to the root of the linked list.
@@ -219,7 +409,7 @@ fs_open(char *name)
     //
     return(ptFile);
 }
-*/
+
 //*****************************************************************************
 //
 // Close an opened file designated by the handle.
