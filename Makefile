@@ -86,8 +86,8 @@ clean:
 gcc:
 	@mkdir gcc
 		
-OBJ  = startup_gcc.o rollo.o uartstdio.o flash_pb.c 
-OBJ += httpd.o lmi_fs.o locator.o lwiplib.o ustdlib.o io.o
+OBJ  = startup_gcc.o main.o rollo.o lmi_fs.o uartstdio.o
+OBJ += httpd.o  locator.o lwiplib.o ustdlib.o
 GOBJ = $(patsubst %.o,gcc/%.o,$(OBJ))
 
 gcc/${TARGET}.axf: $(GOBJ)

@@ -10,13 +10,12 @@
 #include <driverlib/timer.h>
 #include <utils/uartstdio.h>
 #include <utils/flash_pb.h>
-
+#include "rollo.h"
 #define SWITCH_TIME 30 // *10ms
 
 //#undef DEBUG
 //#define DEBUG
 #define NUM_INPUTS    36
-#define NUM_OUTPUTS   10
 #define NUM_TIMERS    32
 #define DEBOUNCE_TIME  5
 
@@ -24,12 +23,10 @@
 #define PORTB GPIO_PORTB_DATA_R
 #define PORTD GPIO_PORTD_DATA_R
 
-#define OUT(x)     (1UL << x)
+
 #define OUT_ALLE   (OUT(0) | OUT(1) | OUT(2) | OUT(3) | OUT(4) | OUT(5) | OUT(6) | OUT(7) | OUT(8) | OUT(9))
 #define OUT_TUEREN (OUT(0) | OUT(4) | OUT(5))
 #define SET_TIME(hour, minute)   (hour*60*60 + minute*60)
-
-//#define REDUCE_RELAY_TRAFIC
 
 volatile int secoundsOfDay;
 volatile unsigned char ticks;
@@ -51,17 +48,6 @@ unsigned long outputs;
 #define IN_H3  5  // I5 PORTA 5
 #define IN_R3  4  // I6 PORTA 4
 
-// A
-typedef enum {
-	EVT_OFF,
-	EVT_ON,
-	EVT_UP,
-	EVT_DOWN,
-	//EVT_DOWN_AIR,  // zum lüften wieder leicht nach oben fahren.
-	EVT_CONT,
-} event_t;
-
-// A
 typedef struct {
 	unsigned short timer;
 	char           name[30];
@@ -79,15 +65,6 @@ typedef struct {
 
 #define MO_FR    (MO | DI | MI | DO | FR)
 #define WE       (SA | SO)
-
-// C
-typedef struct {
-	unsigned char days;           // bit 0 mon bit 1 die ... 6 son
-	unsigned long secOfDay;
-	event_t       event;
-	unsigned long outputs;
-    char          name[30];
-} time_t;
 
 time_t timeEvents[NUM_TIMERS] = {
 {WE,    SET_TIME( 9,30), EVT_UP,   OUT_ALLE,   "WE Hoch"},
@@ -123,18 +100,6 @@ time_t timeEvents[NUM_TIMERS] = {
 {0,0,0,0,""},
 {0,0,0,0,""},
 };
-
-// sizeof(time_t) * NUM_TIMERS
-/*
-// C
-typedef struct {
-	unsigned char days;           // bit 7 mon bit 6 die ... 1 son
-	unsigned char sonnenaufgang;  // 0 = sonnenuntergang
-	short         timeDiff;       // Zeit bevor (-) oder nach dem Sonnenaufgang oder Sonnenuntergang.
-	unsigned long outputs;
-	event_t       event;          // event
-} smart_time_t;
-*/
 
 typedef enum {
     UP_START,
@@ -217,13 +182,21 @@ output_t output[NUM_OUTPUTS] = {
 // jeweils nur 6 Bit pro Byte. Wie bei der Hardware.
 unsigned char inputs_new[6], inputs_debounced[6];
 
-void setEvent(event_t event, unsigned long outputs, char *name);
+/**
+ * Reads multiplexed inputs, debounce intputs and generate Events. 
+ */ 
 void readInputs(void);
+
+/**
+ * If the current time is in the timeEvents array defiened it generates a 
+ * event.
+ */  
 void timeManager(void);
-void rolloControl(event_t event, unsigned char out_id, unsigned short delay);
+
+/**
+ * Sets outputshiftregisters with gpio
+ */ 
 void setOutputs(void);
-void readSettingsFromEerpom(void);
-void saveSettingsInEeprom(void);
 
 void print_TimerEvents() {
 	int size = NUM_TIMERS, i, j;
@@ -411,19 +384,8 @@ void setEvent(event_t event, unsigned long outputs, char *name) {
 #endif
 }
 
-#ifdef REDUCE_RELAY_TRAFIC
-    unsigned long outputsOld = 0xFFFFF, intTime = 0;
-#endif
-
 void setOutputs(void) {
 	unsigned long val = ~outputs, i;
-#ifdef REDUCE_RELAY_TRAFIC 
-    if (outputs == outputsOld && intTime < 100)  {
-		intTime++;
-		return;
-	}
-	intTime = 0;
-#endif
 	PORTB &= ~P_SER_O;
 	PORTD &= ~P_SCK_O;
 	wait();
@@ -446,13 +408,17 @@ void setOutputs(void) {
     }
     PORTB |= P_RCK_O;
     wait();
-    PORTB &= ~P_RCK_O;
-#ifdef REDUCE_RELAY_TRAFIC     
-    outputsOld = outputs;
-#endif    
+    PORTB &= ~P_RCK_O;  
 }
 
-void setTime(unsigned char hour, unsigned char min, unsigned char day) {
+
+
+void setTimeSod(unsigned short sod, unsigned char day) {
+	secoundsOfDay = sod;
+	weekDay       = day;
+}
+
+static void setTime(unsigned char hour, unsigned char min, unsigned char day) {
     if (hour > 23 || min > 59 || day > 6)
         return;
     secoundsOfDay = SET_TIME(hour, min);
@@ -485,6 +451,23 @@ beispiel:
     }
 
  	*/
+}
+
+void rollo_init(void) {
+ 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA | SYSCTL_PERIPH_GPIOB | SYSCTL_PERIPH_GPIOD);
+    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+    wait();
+    UARTStdioInit(0);
+
+	GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, OUT(IN_R1) | OUT(IN_H2) | OUT(IN_R2) | OUT(IN_H3) | OUT(IN_R3));
+	GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, OUT(IN_H1));
+	GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, P_RCK_I);
+	GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, P_SER_O | P_RCK_O);
+
+	GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, P_SCK_O | P_SCK_I | P_SER_I | OUT(3));
+	SysTickIntRegister(SysTickHandler);
+	UARTEchoSet(false);
+	outputs = 0;
 }
 
 void switchPowerOff(output_t *out) {
@@ -608,6 +591,27 @@ void timeManager(void) {
                 setEvent(timeEvents[i].event, timeEvents[i].outputs, timeEvents[i].name);
             }
        }
+    }
+}
+
+void rolloCont(void) {
+	unsigned char i;
+	readInputs();
+	timeManager();
+	for (i = 0; i < NUM_OUTPUTS; i++)
+		rolloControl(EVT_CONT, i, 0);
+	//UARTprintf("%x\n", outputs);
+	setOutputs();
+	serialControl();	
+}
+
+void initialRelayTest(void) {
+	unsigned char i;
+    for (i = 0; i < 32; i++) {
+    	while (ticks < 250);
+		ticks = 0;
+		outputs = OUT(i);
+		setOutputs();
     }
 }
 
@@ -758,51 +762,4 @@ void serialControl(void) {
 	}
 }
 
-int main(void) {
-    int i;
-    ROM_SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ); // 80 MHz
-    ROM_SysTickPeriodSet(80000L); // 1 ms Tick
-	ROM_SysTickEnable();
-	ROM_SysTickIntEnable();
-	ROM_IntMasterEnable();
-    // Initialize the UART.
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA | SYSCTL_PERIPH_GPIOB | SYSCTL_PERIPH_GPIOD);
-    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-    wait();
-    UARTStdioInit(0);
 
-	GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, OUT(IN_R1) | OUT(IN_H2) | OUT(IN_R2) | OUT(IN_H3) | OUT(IN_R3));
-	GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, OUT(IN_H1));
-	GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, P_RCK_I);
-	GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, P_SER_O | P_RCK_O);
-
-	GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, P_SCK_O | P_SCK_I | P_SER_I | OUT(3));
-	SysTickIntRegister(SysTickHandler);
-	UARTEchoSet(false);
-	UARTprintf("\nRollocontrol v0.3 (Martin Ongsiek)\n");
-    readSettingsFromEerpom();
-#ifdef INITAL_RELAY_TEST
-    for (i = 0; i < 32; i++) {
-    	while (ticks < 250);
-		ticks = 0;
-		outputs = OUT(i);
-		setOutputs();
-    }
-#endif    
-    outputs = 0;
-	while (1) {
-	 	if (ticks >= 10) {
-	 		ticks -= 10;
-			readInputs();
-			timeManager();
-			for (i = 0; i < NUM_OUTPUTS; i++)
-				rolloControl(EVT_CONT, i, 0);
-			//UARTprintf("%x\n", outputs);
-			setOutputs();
-			serialControl();
-#ifdef REDUCE_RELAY_TRAFIC
-			outputsOld = outputs;
-#endif
-	 	}
-	}
-}
