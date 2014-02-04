@@ -28,6 +28,7 @@
 #include "utils/ustdlib.h"
 #include "httpserver_raw/fs.h"
 #include "httpserver_raw/fsdata.h"
+#incldue "rollo.h"
 
 //*****************************************************************************
 //
@@ -43,7 +44,7 @@
 //*****************************************************************************
 #include "io_fsdata.h"
 
-#define MIN(x, y) ((x) < (y)?(x):(y))
+#define MIN(x, y) ((x)<(y)?(x):(y))
 #define MAX_ELEMETS 10
 
 typedef struct {
@@ -194,65 +195,22 @@ int parseUri(char *uri, int len, uriParse_t *ps) {
 	return 1;
 }
 
-typedef enum {
-  	NO_FOUND,
-  	ERROR,
-  	OK
-
-} error_t
-
-typedef bool.unsigned char;
-
 static unsigned char idx;
 
-bool nextParam(char *paramPtr, char *valuePtr, unsigned char len, uriParse_t *u) {
+unsigned char nextParam(char *paramPtr, char *valuePtr, unsigned char len, uriParse_t *u) {
     if (!u || !u->uriString || !valuePtr || !paramPtr  || idx >= u->length)
 		return 0;
-			
-	idx++;		
+	decodeString(paramPtr, &(u->uriString[u->elem[idx].para_off]),
+                 MIN(u->elem[idx].para_len, len));
+    decodeString(valuePtr, &(u->uriString[u->elem[idx].value_off]),
+                 MIN(u->elem[idx].value_len, len));
+	idx++;
 }
 
-bool firstParam(char *paramPtr, char *valuePtr, unsigned char len, uriParse_t *u) {
+unsigned char firstParam(char *paramPtr, char *valuePtr, unsigned char len, uriParse_t *u) {
 	 idx = 0;
      nextParam(paramPtr, valuePtr, len, u);
 }
-
-/*
-unsigned char parameterNameEqual(unsigned char paraIdx,
-                                 uriParse_t *u,
-                                 const char *compareName) {
-    if (!u || !u->uriString || !compareName || paraIdx >= u->length)
-		return 0;
-    return strncmp(&(u->uriString[(u->elem[paraIdx]).para_off]),
-                   compareName, (u->elem[paraIdx]).para_len) == 0;
-}
-
-unsigned char getParameterStringValue(char *parameterName,
-                                    uriParse_t *u,
-                                    unsigned char *error) {
-}                                    
-
-unsigned short getParameterIntValue(char *parameterName,
-                                    uriParse_t *u,
-                                    unsigned char *error) {
-    unsigned char temp, i;
-    signed char found = -1;
-    if (!error)
-        return 0;
-    for (i = 0; i < u->length; i++) {
-		if  (parameterNameEqual(i, u, parameterName)) {
-		     found = i;
-		     break;
-		}
-	}
-    if (found == -1 || !u || !u->uriString || paraIdx >= u->length) {
-		*error = 1;
-        return 0;
-    }
-    *error = 0;
-    return atoi(&(u->uriString[(u->elem[paraIdx]).value_off]));
-}
- */
 
 //*****************************************************************************
 //
@@ -263,33 +221,78 @@ unsigned short getParameterIntValue(char *parameterName,
 // example web page.
 //
 //*****************************************************************************
+#define BUF 30
 struct fs_file * fs_open(char *name) {
     const struct fsdata_file *ptTree;
     struct fs_file *ptFile = NULL;
     uriParse_t u;
-    char param[40], value[40], error = 0;
+    char param[BUF], value[BUF], error = 0, i;
     //
     // Allocate memory for the file system structure.
     //
     ptFile = mem_malloc(sizeof(struct fs_file));
-    if(NULL == ptFile)
-    {
+    if (NULL == ptFile)
         return(NULL);
-    }
     
     if (parseUri(name, strlen(name), &u)) {
         if (!u.uriString || !u.length)
-            return;
-        if (parameterNameEqual(0, &u, "cmd")) {
+            return NULL;
+
+        if (firstParam(param, value, BUF-1, &u)) {
+            if (strncmp(param, "cmd", BUF-1) != 0)
+                return NULL;
             
+            if (strncmp(value, "setTime", BUF-1) == 0) {
+                while (nextParam(param, value, BUF-1, &u)) {
+                    if (strncmp(param, "sod", BUF-1) == 0) {
+                        setTimeSod(atoi(value));
+                    } else if (strncmp(param, "day", BUF-1) == 0) {
+                        setWeekday(atoi(value));
+                    }
+                }
+            } else if (strncmp(value, "up", BUF-1) == 0) {
+                while (nextParam(param, value, BUF-1, &u)) {
+                    if (strncmp(param, "out", BUF-1) == 0) {
+                        setEvent(EVT_UP, atoi(value), "Up ajax"));
+                    }
+                }
+            } else if (strncmp(value, "down", BUF-1) == 0) {
+                while (nextParam(param, value, BUF-1, &u)) {
+                    if (strncmp(param, "out", BUF-1) == 0) {
+                        setEvent(EVT_DOWN, atoi(value), "Down ajax"));
+                    }
+                }
+            } else if (strncmp(value, "timer", BUF-1) == 0) {
+                time_t *tPtr = NUll;
+                while (nextParam(param, value, BUF-1, &u)) {
+                    if (strncmp(param, "if", BUF-1) == 0) {
+                        if (strncmp(value, "new", BUF-1) == 0)
+                            id = -1;
+                        else
+                            id = atoi(value);
+                        setTimeEvent(id, tPtr);
+                    } else if (!tPtr) {
+                        break;
+                    } else if (strncmp(param, "out", BUF-1) == 0) {
+                        tPtr->outputs = atoi(value);
+                    } else if (strncmp(param, "sod", BUF-1) == 0) {
+                        tPtr->secOfDay = atoi(value);
+                    } else if (strncmp(param, "days", BUF-1) == 0) {
+                        tPtr->days = atoi(value);
+                    } else if (strncmp(param, "name", BUF-1) == 0) {
+                        strncpy(tPtr->name, value, BUF-1);
+                    }
+                }
+                tPtr->name[BUF-1] = 0;
+            } else if (strncmp(value, "delTimer", BUF-1) == 0) {
+                if (nextParam(param, value, BUF-1, &u)) {
+                    if (strncmp(param, "id", BUF-1) == 0) {
+                        delTimer(atoi(value));
+                    }
+                }
+            }
         }
         
-        /*
-        for (i = 0; i < u->length; i++) {
-            decodeString(help, &(u.uriString[u.elem[i].para_off]),  u.elem[i].para_len);
-            decodeString(help2, &(u.uriString[u.elem[i].value_off]), u.elem[i].value_len);
-            printf("%s = %s\n", help, help2);
-        } */
         
     }
     
@@ -378,8 +381,8 @@ struct fs_file * fs_open(char *name) {
     }
     //
     // If I can't find it there, look in the rest of the main file system
-    //
-    else */
+    //*/
+    else
     {
         //
         // Initialize the file system tree pointer to the root of the linked list.

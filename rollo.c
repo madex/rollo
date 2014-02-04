@@ -202,7 +202,7 @@ static void timeManager(void);
  */ 
 static void setOutputs(void);
 static void rolloControl(event_t event, unsigned char out_id, unsigned short delay);
-
+static void timeOverflowCorrecter(void);
 static void serialControl(void);
 
 
@@ -430,9 +430,21 @@ void setOutputs(void) {
 }
 
 
-void setTimeSod(unsigned short sod, unsigned char day) {
-	secoundsOfDay = sod;
-	weekDay       = day;
+
+void setTimeSod(unsigned short sod) {
+    secoundsOfDay = sod;
+    timeOverflowCorrecter();
+}
+
+void setWeekday(unsigned char day) {
+    if (day < 7) {
+        weekDay = day;
+        timeOverflowCorrecter();
+    }
+}
+
+void delTimer(unsigned char id) {
+    
 }
 
 void readSettingsFromEerpom(void) {

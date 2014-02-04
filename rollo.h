@@ -45,6 +45,8 @@ void rollo_init(void);
  */ 
 void rollo_Tick(void); 
 
+void delTimer(unsigned char id);
+
 /**
  * Set a event to the outputs bitcoded in the variable outputs.
  * @param event Event typically EVT_UP or EVT_DOWN
@@ -64,7 +66,8 @@ void rollo_Cont(void);
  * @param sod secounds of day, from website js.
  * @param day weekday from website.
  */   
-void setTimeSod(unsigned short sod, unsigned char day);
+void setTimeSod(unsigned short sod);
+void setWeekday(unsigned char day);
 
 
 //void readSettingsFromEerpom(void);
