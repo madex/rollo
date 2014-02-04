@@ -43,7 +43,7 @@
 //*****************************************************************************
 #include "io_fsdata.h"
 
-
+#define MIN(x, y) ((x) < (y)?(x):(y))
 #define MAX_ELEMETS 10
 
 typedef struct {
@@ -194,6 +194,30 @@ int parseUri(char *uri, int len, uriParse_t *ps) {
 	return 1;
 }
 
+typedef enum {
+  	NO_FOUND,
+  	ERROR,
+  	OK
+
+} error_t
+
+typedef bool.unsigned char;
+
+static unsigned char idx;
+
+bool nextParam(char *paramPtr, char *valuePtr, unsigned char len, uriParse_t *u) {
+    if (!u || !u->uriString || !valuePtr || !paramPtr  || idx >= u->length)
+		return 0;
+			
+	idx++;		
+}
+
+bool firstParam(char *paramPtr, char *valuePtr, unsigned char len, uriParse_t *u) {
+	 idx = 0;
+     nextParam(paramPtr, valuePtr, len, u);
+}
+
+/*
 unsigned char parameterNameEqual(unsigned char paraIdx,
                                  uriParse_t *u,
                                  const char *compareName) {
@@ -203,20 +227,32 @@ unsigned char parameterNameEqual(unsigned char paraIdx,
                    compareName, (u->elem[paraIdx]).para_len) == 0;
 }
 
-unsigned short getParameterValue(unsigned char paraIdx,
-                                 uriParse_t *u,
-                                 unsigned char *error) {
-    unsigned char temp;
+unsigned char getParameterStringValue(char *parameterName,
+                                    uriParse_t *u,
+                                    unsigned char *error) {
+}                                    
+
+unsigned short getParameterIntValue(char *parameterName,
+                                    uriParse_t *u,
+                                    unsigned char *error) {
+    unsigned char temp, i;
+    signed char found = -1;
     if (!error)
-        error = &temp;
-    if (!u || !u->uriString || paraIdx >= u->length) {
+        return 0;
+    for (i = 0; i < u->length; i++) {
+		if  (parameterNameEqual(i, u, parameterName)) {
+		     found = i;
+		     break;
+		}
+	}
+    if (found == -1 || !u || !u->uriString || paraIdx >= u->length) {
 		*error = 1;
         return 0;
     }
     *error = 0;
     return atoi(&(u->uriString[(u->elem[paraIdx]).value_off]));
 }
-
+ */
 
 //*****************************************************************************
 //
@@ -231,7 +267,7 @@ struct fs_file * fs_open(char *name) {
     const struct fsdata_file *ptTree;
     struct fs_file *ptFile = NULL;
     uriParse_t u;
-    char help[80], error = 0;
+    char param[40], value[40], error = 0;
     //
     // Allocate memory for the file system structure.
     //
@@ -242,18 +278,18 @@ struct fs_file * fs_open(char *name) {
     }
     
     if (parseUri(name, strlen(name), &u)) {
-        if (!u || !u->uriString || !u->length)
+        if (!u.uriString || !u.length)
             return;
         if (parameterNameEqual(0, &u, "cmd")) {
             
         }
         
-        
+        /*
         for (i = 0; i < u->length; i++) {
-            decodeString(help, &(u->uriString[(u->elem[i]).para_off]),  (u->elem[i]).para_len);
-            decodeString(help2, &(u->uriString[(u->elem[i]).value_off]), (u->elem[i]).value_len);
+            decodeString(help, &(u.uriString[u.elem[i].para_off]),  u.elem[i].para_len);
+            decodeString(help2, &(u.uriString[u.elem[i].value_off]), u.elem[i].value_len);
             printf("%s = %s\n", help, help2);
-        }
+        } */
         
     }
     

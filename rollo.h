@@ -3,8 +3,6 @@
 
 #define OUT(x) (1L << x)
  
-extern volatile unsigned char ticks; 
-    
 typedef enum {
 	EVT_OFF,
 	EVT_ON,
@@ -36,7 +34,16 @@ unsigned char setTimeEvent(signed char idx, time_t *newTimeEvent);
  */ 
 void genJson(unsigned char *buf, unsigned short size);
 
+
+/**
+ * Init of hardware and variables for the rollo control.
+ */ 
 void rollo_init(void);
+
+/**
+ * SysTickHandler from rollo for the intern software RTC.
+ */ 
+void rollo_Tick(void); 
 
 /**
  * Set a event to the outputs bitcoded in the variable outputs.
@@ -47,23 +54,14 @@ void rollo_init(void);
    
 void setEvent(event_t event, unsigned long outputs, char *name);
 
-
-
 /**
  * trigger all 10 ms all output control state machines.
  */ 
-void rolloCont(void);
-
-/**
- * Test routine that triggers all relays seperate, to see if they are working.
- */ 
-void initialRelayTest(void);
-
-
+void rollo_Cont(void);
 
 /**
  * Set the time.
- * @param sod secounds of day, from website.
+ * @param sod secounds of day, from website js.
  * @param day weekday from website.
  */   
 void setTimeSod(unsigned short sod, unsigned char day);

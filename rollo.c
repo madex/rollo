@@ -2,6 +2,7 @@
 #include <inc/hw_memmap.h>
 #include <inc/hw_types.h>
 #include <driverlib/debug.h>
+#include <driverlib/ethernet.h>
 #include <driverlib/gpio.h>
 #include <driverlib/rom.h>
 #include <driverlib/uart.h>
@@ -9,7 +10,9 @@
 #include <driverlib/systick.h>
 #include <driverlib/timer.h>
 #include <utils/uartstdio.h>
-#include <utils/flash_pb.h>
+#include <httpserver_raw/httpd.h>
+#include <utils/locator.h>
+#include <utils/lwiplib.h>
 #include "rollo.h"
 #define SWITCH_TIME 30 // *10ms
 
@@ -25,12 +28,12 @@
 #define PORTD GPIO_PORTD_DATA_R
 
 
-#define OUT_ALLE   (OUT(0) | OUT(1) | OUT(2) | OUT(3) | OUT(4) | OUT(5) | OUT(6) | OUT(7) | OUT(8) | OUT(9))
+#define OUT_ALLE   (OUT(0) | OUT(1) | OUT(2) | OUT(3) | OUT(4) |  \
+                    OUT(5) | OUT(6) | OUT(7) | OUT(8) | OUT(9))
 #define OUT_TUEREN (OUT(0) | OUT(4) | OUT(5))
 #define SET_TIME(hour, minute)   (hour*60*60 + minute*60)
 
 volatile int secoundsOfDay;
-volatile unsigned char ticks;
 volatile unsigned int timeInMs;
 volatile unsigned char weekDay; // 0 montag 1 dienstag
 unsigned long outputs;
@@ -199,7 +202,7 @@ static void timeManager(void);
  */ 
 static void setOutputs(void);
 static void rolloControl(event_t event, unsigned char out_id, unsigned short delay);
-void SysTickHandler(void);
+
 static void serialControl(void);
 
 
@@ -472,7 +475,7 @@ void rollo_init(void) {
 	GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, P_SER_O | P_RCK_O);
 
 	GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, P_SCK_O | P_SCK_I | P_SER_I | OUT(3));
-	SysTickIntRegister(SysTickHandler);
+	
 	UARTEchoSet(false);
 	outputs = 0;
 }
@@ -485,7 +488,8 @@ static void switchPowerOff(output_t *out) {
 	}
 }    
 
-static void rolloControl(event_t event, unsigned char out_id, unsigned short delay) {
+static void rolloControl(event_t event, unsigned char out_id, 
+                         unsigned short delay) {
 	output_t *out;
 	if (out_id >= NUM_OUTPUTS)
 		return;
@@ -612,6 +616,11 @@ void rolloCont(void) {
 	serialControl();	
 }
 
+
+/**
+ * Test routine that triggers all relays seperate, to see if they are working.
+ */ 
+/*
 void initialRelayTest(void) {
 	unsigned char i;
     for (i = 0; i < 32; i++) {
@@ -619,8 +628,8 @@ void initialRelayTest(void) {
 		ticks = 0;
 		outputs = OUT(i);
 		setOutputs();
-    }
-}
+    } 
+}*/
 
 void saveSettingsInEeprom(void) {
 
@@ -646,10 +655,8 @@ static void timeOverflowCorrecter(void) {
 		weekDay = 0; 
 }
 
-// Aufruf jede Millisekunde (interrupt)
-void SysTickHandler(void) {
-	timeInMs++;
-    ticks++;
+void rollo_Tick(void) {
+  	timeInMs++;
 	if (timeInMs == 1000) {
    		timeInMs = 0;
 		secoundsOfDay++; 
