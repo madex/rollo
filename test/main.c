@@ -2,6 +2,7 @@
 #undef time_t
 #define main uC_main
 #include "../rollo.c"
+#include "../lmi_fs.c"
 #undef main
 
 static inline void jsonPrintTimeEvents() {

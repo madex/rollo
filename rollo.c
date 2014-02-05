@@ -617,7 +617,7 @@ void timeManager(void) {
     }
 }
 
-void rolloCont(void) {
+void rollo_Cont(void) {
 	unsigned char i;
 	readInputs();
 	timeManager();
@@ -646,12 +646,6 @@ void initialRelayTest(void) {
 void saveSettingsInEeprom(void) {
 
 }
-
-#ifdef DEBUG
-void __error__(char *pcFilename, unsigned long ulLine) {
-        UARTprintf("ERROR: %s:%d\n", pcFilename, ulLine);
-}
-#endif
 
 static void timeOverflowCorrecter(void) {
    if (secoundsOfDay < 0) {

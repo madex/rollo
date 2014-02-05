@@ -40,9 +40,8 @@ static unsigned long g_ulLastIPAddr = 0;
 //
 //*****************************************************************************
 #ifdef DEBUG
-void
-__error__(char *pcFilename, unsigned long ulLine)
-{
+void __error__(char *pcFilename, unsigned long ulLine) {
+        UARTprintf("ERROR: %s:%d\n", pcFilename, ulLine);
 }
 #endif
 
@@ -95,7 +94,6 @@ void SysTickHandler(void) {
 }
 
 int main(void) {
-    int i;
     ROM_SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ); // 80 MHz
     ROM_SysTickPeriodSet(80000L); // 1 ms Tick
 	ROM_SysTickEnable();

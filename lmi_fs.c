@@ -28,7 +28,7 @@
 #include "utils/ustdlib.h"
 #include "httpserver_raw/fs.h"
 #include "httpserver_raw/fsdata.h"
-#incldue "rollo.h"
+#include "rollo.h"
 
 //*****************************************************************************
 //
@@ -137,7 +137,7 @@ void decodeString(char *dest, char *src, unsigned int len) {
 
 
 int parseUri(char *uri, int len, uriParse_t *ps) {
-	unsigned int n = 0, valueLen;
+	unsigned int n = 0, valueLen = 0;
 	char c;
 	parseState_t st = PARAM_START;
 	ps->uriString = uri;
@@ -205,28 +205,21 @@ unsigned char nextParam(char *paramPtr, char *valuePtr, unsigned char len, uriPa
     decodeString(valuePtr, &(u->uriString[u->elem[idx].value_off]),
                  MIN(u->elem[idx].value_len, len));
 	idx++;
+	return 1;
 }
 
 unsigned char firstParam(char *paramPtr, char *valuePtr, unsigned char len, uriParse_t *u) {
 	 idx = 0;
-     nextParam(paramPtr, valuePtr, len, u);
+     return nextParam(paramPtr, valuePtr, len, u);
 }
 
-//*****************************************************************************
-//
-// Open a file and return a handle to the file, if found.  Otherwise,
-// return NULL.  This function also looks for special filenames used to
-// provide specific status information or to control various subsystems.
-// These filenames are used by the JavaScript on the "IO Control Demo 1"
-// example web page.
-//
-//*****************************************************************************
 #define BUF 30
-struct fs_file * fs_open(char *name) {
-    const struct fsdata_file *ptTree;
+			  	
+struct fs_file *fs_open(char *name) {
+    const struct fsdata_file *ptTree = NULL;
     struct fs_file *ptFile = NULL;
     uriParse_t u;
-    char param[BUF], value[BUF], error = 0, i;
+    char param[BUF], value[BUF];
     //
     // Allocate memory for the file system structure.
     //
@@ -253,20 +246,21 @@ struct fs_file * fs_open(char *name) {
             } else if (strncmp(value, "up", BUF-1) == 0) {
                 while (nextParam(param, value, BUF-1, &u)) {
                     if (strncmp(param, "out", BUF-1) == 0) {
-                        setEvent(EVT_UP, atoi(value), "Up ajax"));
+                        setEvent(EVT_UP, atoi(value), "Up ajax");
                     }
                 }
             } else if (strncmp(value, "down", BUF-1) == 0) {
                 while (nextParam(param, value, BUF-1, &u)) {
                     if (strncmp(param, "out", BUF-1) == 0) {
-                        setEvent(EVT_DOWN, atoi(value), "Down ajax"));
+                        setEvent(EVT_DOWN, atoi(value), "Down ajax");
                     }
                 }
             } else if (strncmp(value, "timer", BUF-1) == 0) {
-                time_t *tPtr = NUll;
+                time_t *tPtr = NULL;
                 while (nextParam(param, value, BUF-1, &u)) {
                     if (strncmp(param, "if", BUF-1) == 0) {
-                        if (strncmp(value, "new", BUF-1) == 0)
+                        unsigned char id;
+						if (strncmp(value, "new", BUF-1) == 0)
                             id = -1;
                         else
                             id = atoi(value);
