@@ -701,7 +701,30 @@ void timeDecHour(void) {
 void timeIncDay(void) {
     weekDay++;
 	timeOverflowCorrecter();
-} 
+}
+
+void genJson(unsigned char *buf, unsigned short size) {
+	int i, len;
+	strncat(buf, "{\"timeEvents\":[", size);
+
+    len = snprintf(buf, size, "{\"timeEvents\":["); buf += len; size -= len;
+    for (i = 0; i < NUM_TIMERS; i++) {
+		if (timeEvents[i].days) { // Falls kein Tag gesetzt? ungesetzter Timer
+			len = snprintf(buf, size, "%c{\"name\":\"%s\",\"days\":%d,\"event\":\"%s\",\"secoundOfDay\":%d,\"id\":%d}\n",
+				   i?',':' ', timeEvents[i].name, timeEvents[i].days,
+				   timeEvents[i].event == EVT_UP ? "hoch": timeEvents[i].event == EVT_DOWN ? "runter":"reserviert",
+				   timeEvents[i].secOfDay , i);
+			buf += len; size -= len;
+		}
+	}
+	printf("],\n");
+
+    jsonPrintTimeEvents();
+    jsonPrintTime();
+    jsonPrintOutputs();
+    printf("}");
+}
+
 
 void printTime(void) {
 	UARTprintf("%02d:%02d ", getHour(secoundsOfDay), getMin(secoundsOfDay));
