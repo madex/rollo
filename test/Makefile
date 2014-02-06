@@ -19,7 +19,7 @@ LDFLAGS  = -fprofile-arcs -ftest-coverage -Wl,-map,$(PRG).map
 
 # Zus�tzliche Bibliotheken
 LIBS     = -lm
-CC       = clang
+CC       = gcc
 
 all: $(OBJ_FOLDER) $(DEP_FOLDER) $(BIN_FOLDER) $(PRG) toolchain.txt 
 #toolchain.txt

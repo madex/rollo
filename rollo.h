@@ -32,7 +32,7 @@ unsigned char setTimeEvent(signed char idx, time_t *newTimeEvent);
  * @param buf Pointer to the buffer for the JSON data.
  * @param size Size of the buffer in bytes.   
  */ 
-void genJson(unsigned char *buf, unsigned short size);
+void genJson(char *buf, unsigned short size);
 
 
 /**

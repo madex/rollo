@@ -1,8 +1,9 @@
 #include "tests.h"
 #undef time_t
+#define JSONTEST
 #define main uC_main
 #include "../rollo.c"
-#include "../lmi_fs.c"
+//#include "../lmi_fs.c"
 #undef main
 
 static inline void jsonPrintTimeEvents() {
@@ -47,17 +48,19 @@ static inline void makeJson() {
 START_TESTS()
 
 START_TEST("make json")
-    //makeJson();
+	char buf[1500];
+    genJson(buf, 1500);
+    printf("\n=> %s\n", buf);
 END_TEST()
 
 START_TEST("time")
-ASSERT_EQUALS(secoundsOfDay, 0);
-ASSERT_EQUALS(weekDay, 0);
-
-for (long i = 0; i < 1000*60*60*24; i++)
-    SysTickHandler();
-ASSERT_EQUALS(secoundsOfDay, 0);
-ASSERT_EQUALS(weekDay, 1);
+	ASSERT_EQUALS(secoundsOfDay, 0);
+	ASSERT_EQUALS(weekDay, 0);
+	
+	//for (long i = 0; i < 1000*60*60*24; i++)
+	   // SysTickHandler();
+	ASSERT_EQUALS(secoundsOfDay, 0);
+	ASSERT_EQUALS(weekDay, 1);
 END_TEST()
 
 END_TESTS()

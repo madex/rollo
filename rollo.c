@@ -13,6 +13,8 @@
 #include <httpserver_raw/httpd.h>
 #include <utils/locator.h>
 #include <utils/lwiplib.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "rollo.h"
 #define SWITCH_TIME 30 // *10ms
 
@@ -703,28 +705,47 @@ void timeIncDay(void) {
 	timeOverflowCorrecter();
 }
 
-void genJson(unsigned char *buf, unsigned short size) {
+void genJson(char *buf, unsigned short size) {
 	int i, len;
+#ifdef JSONTEST   	
+	unsigned short sizeStart = size;
+	char *bufStart = buf;
+#endif	
 	strncat(buf, "{\"timeEvents\":[", size);
 
     len = snprintf(buf, size, "{\"timeEvents\":["); buf += len; size -= len;
     for (i = 0; i < NUM_TIMERS; i++) {
 		if (timeEvents[i].days) { // Falls kein Tag gesetzt? ungesetzter Timer
-			len = snprintf(buf, size, "%c{\"name\":\"%s\",\"days\":%d,\"event\":\"%s\",\"secoundOfDay\":%d,\"id\":%d}\n",
-				   i?',':' ', timeEvents[i].name, timeEvents[i].days,
-				   timeEvents[i].event == EVT_UP ? "hoch": timeEvents[i].event == EVT_DOWN ? "runter":"reserviert",
-				   timeEvents[i].secOfDay , i);
+			len = snprintf(buf, size, 
+		       "%s{\"name\":\"%s\",\"days\":%d,\"event\":\"%s\",\"secoundOfDay\":%d,\"id\":%d}",
+			   i?",":"",
+			   timeEvents[i].name?timeEvents[i].name:"", timeEvents[i].days,
+			   timeEvents[i].event == EVT_UP ? "hoch": 
+			   timeEvents[i].event == EVT_DOWN ? "runter":"reserviert",
+			   timeEvents[i].secOfDay , i);
 			buf += len; size -= len;
 		}
 	}
-	printf("],\n");
-
-    jsonPrintTimeEvents();
-    jsonPrintTime();
-    jsonPrintOutputs();
-    printf("}");
+	len = snprintf(buf, size, 
+	               "],time\":{\"secoundsOfDay\":%d,\"weekDay\":%d},\"outputs\":[", 
+	               secoundsOfDay, weekDay);
+	buf += len; size -= len;
+	for (i = 0; i < NUM_OUTPUTS; i++) {
+	    len = snprintf(buf, size, 
+           "%s{\"name\":\"%s\",\"maxTime\":%d,\"state\":%s}", 
+		   i?",":"",output[i].name, output[i].maxTime, 
+		   output[i].timer?(output[i].state == UP?"faehrt hoch":"faehrt runter"):
+		   (output[i].state == UP?"oben":output[i].state == DOWN?"unten":"gestoppt"));
+		buf += len; size -= len;			   
+    }
+    len = snprintf(buf, size, "]}");
+	buf += len; size -= len;
+#ifdef JSONTEST    
+  	// debug output  
+    printf("bufStart:%x, buf:%x, used:%d, sizeStart:%d, size:%d, size diff:%d",
+	       bufStart, buf, buf-bufStart, sizeStart, size, sizeStart-size);
+#endif
 }
-
 
 void printTime(void) {
 	UARTprintf("%02d:%02d ", getHour(secoundsOfDay), getMin(secoundsOfDay));
