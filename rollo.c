@@ -75,11 +75,11 @@ typedef struct {
 
 timeEvent_t timeEvents[NUM_TIMERS] = {
 {WE,    SET_TIME( 9,30), EVT_UP,   OUT_ALLE,   "WE Hoch"},
-{WE,    SET_TIME(18,00), EVT_DOWN, OUT_ALLE,   "WE Runter"},
+{WE,    SET_TIME(19,30), EVT_DOWN, OUT_ALLE,   "WE Runter"},
 {MO_FR, SET_TIME( 7,30), EVT_UP,   OUT_ALLE,   "Wochentags Hoch"},
-{MO_FR, SET_TIME(18,00), EVT_DOWN, OUT_ALLE,   "Wochentags Runter"},
-{WE,    SET_TIME(17,00), EVT_DOWN, OUT_TUEREN, "WE Tueren"},
-{MO_FR, SET_TIME(17,00), EVT_DOWN, OUT_TUEREN, "Wochentags Tueren"},
+{MO_FR, SET_TIME(19,30), EVT_DOWN, OUT_ALLE,   "Wochentags Runter"},
+{WE,    SET_TIME(18,45), EVT_DOWN, OUT_TUEREN, "WE Tueren"},
+{MO_FR, SET_TIME(18,45), EVT_DOWN, OUT_TUEREN, "Wochentags Tueren"},
 {0,0,0,0,""},
 {0,0,0,0,""},
 {0,0,0,0,""},
@@ -711,7 +711,7 @@ void timeIncDay(void) {
 	timeOverflowCorrecter();
 }
 
-void genJson(char *buf, unsigned short size) {
+char* genJson(char *buf, unsigned short size) {
 	int i, len;
 #ifdef JSONTEST   	
 	unsigned short sizeStart = size;
@@ -751,6 +751,7 @@ void genJson(char *buf, unsigned short size) {
     printf("bufStart:%x, buf:%x, used:%d, sizeStart:%d, size:%d, size diff:%d",
 	       bufStart, buf, buf-bufStart, sizeStart, size, sizeStart-size);
 #endif
+    return buf;
 }
 
 void printTime(void) {

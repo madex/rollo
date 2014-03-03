@@ -97,12 +97,11 @@ void lwIPHostTimerHandler(void) {
 void SysTickHandler(void) {
 	ticks++;
 	rollo_Tick();
-	lwIPTimer(1);
 }
-char *AjaxHandler(int iIndex, int iNumParams, char *pcParam[], char *pcValue[]);
+/*char *AjaxHandler(int iIndex, int iNumParams, char *pcParam[], char *pcValue[]);
 static const tCGI g_psConfigCGIURIs[] = {
     { "/ajax.cgi", AjaxHandler },      // CGI_INDEX_CONTROL
-};
+};*/
 
 int main(void) {
 	unsigned long ulUser0, ulUser1;
@@ -168,7 +167,7 @@ int main(void) {
 	//
 	httpd_init();
 
-	http_set_cgi_handlers(g_psConfigCGIURIs, 1);
+	//http_set_cgi_handlers(g_psConfigCGIURIs, 1);
 
     //readSettingsFromEerpom();
 	//initialRelayTest();
@@ -176,7 +175,7 @@ int main(void) {
 	 	if (ticks >= 10) {
 	 		ticks -= 10;
 			rollo_Cont();
-			
+			lwIPTimer(10);
 	 	}
 	}
 	return 0;
