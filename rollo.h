@@ -17,7 +17,7 @@ typedef struct {
 	event_t       event;
 	unsigned long outputs;
     char          name[30];
-} time_t;
+} timeEvent_t;
 
 /** 
  * Change the content of a TimeEvent, or create a new (idx = -1)
@@ -25,7 +25,7 @@ typedef struct {
  * @param newTimeEvent a Pointer of a struct from witch is copied.
  * @return 1 for Error. Dataformat or Memory full   0 changed.   
  */  
-unsigned char setTimeEvent(signed char idx, time_t *newTimeEvent);
+unsigned char setTimeEvent(signed char idx, timeEvent_t *newTimeEvent);
 
 /** 
  * Generates a Json representation of the current data for sending over http.

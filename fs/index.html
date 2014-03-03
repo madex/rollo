@@ -1179,7 +1179,7 @@ function ajax(urlVars, callback) {
                 callback(httpRequest.responseText);// we're calling our method
             }
         }
-    };    httpRequest.open('GET', "/ajax" + urlVars);
+    };    httpRequest.open('GET', "/ajax.cgi" + urlVars);
     httpRequest.send();
 }
 

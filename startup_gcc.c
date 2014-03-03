@@ -32,6 +32,7 @@ static void NmiSR(void);
 static void FaultISR(void);
 static void IntDefaultHandler(void);
 extern void UARTStdioIntHandler(void);
+extern void lwIPEthernetIntHandler(void);
 
 //*****************************************************************************
 //
@@ -45,7 +46,7 @@ extern int main(void);
 // Reserve space for the system stack.
 //
 //*****************************************************************************
-static unsigned long pulStack[256];
+static unsigned long pulStack[1024];
 
 //*****************************************************************************
 //
@@ -115,7 +116,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // CAN0
     IntDefaultHandler,                      // CAN1
     IntDefaultHandler,                      // CAN2
-    IntDefaultHandler,                      // Ethernet
+    lwIPEthernetIntHandler,                      // Ethernet
     IntDefaultHandler,                      // Hibernate
     IntDefaultHandler,                      // USB0
     IntDefaultHandler,                      // PWM Generator 3

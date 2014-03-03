@@ -28,6 +28,7 @@
 #include "utils/ustdlib.h"
 #include "httpserver_raw/fs.h"
 #include "httpserver_raw/fsdata.h"
+#include <utils/uartstdio.h>
 #include "rollo.h"
 
 //*****************************************************************************
@@ -213,83 +214,123 @@ unsigned char firstParam(char *paramPtr, char *valuePtr, unsigned char len, uriP
      return nextParam(paramPtr, valuePtr, len, u);
 }
 
-#define BUF 30
-			  	
+char *AjaxHandler(int iIndex, int iNumParams, char *pcParam[], char *pcValue[]) {
+    tBoolean bParamError;
+
+    //
+    // We have not encountered any parameter errors yet.
+    //
+    bParamError = false;
+    UARTprintf("AjaxHandler %d %d\n", iIndex, iNumParams);
+
+    /*
+    uriParse_t u;
+        char param[BUF], value[BUF];
+    if (parseUri(name, strlen(name), &u)) {
+            if (!u.uriString || !u.length)
+                return NULL;
+
+            if (firstParam(param, value, BUF-1, &u)) {
+                if (strncmp(param, "cmd", BUF-1) != 0)
+                    return NULL;
+
+                if (strncmp(value, "setTime", BUF-1) == 0) {
+                    while (nextParam(param, value, BUF-1, &u)) {
+                        if (strncmp(param, "sod", BUF-1) == 0) {
+                            setTimeSod(atoi(value));
+                        } else if (strncmp(param, "day", BUF-1) == 0) {
+                            setWeekday(atoi(value));
+                        }
+                    }
+                } else if (strncmp(value, "up", BUF-1) == 0) {
+                    while (nextParam(param, value, BUF-1, &u)) {
+                        if (strncmp(param, "out", BUF-1) == 0) {
+                            setEvent(EVT_UP, atoi(value), "Up ajax");
+                        }
+                    }
+                } else if (strncmp(value, "down", BUF-1) == 0) {
+                    while (nextParam(param, value, BUF-1, &u)) {
+                        if (strncmp(param, "out", BUF-1) == 0) {
+                            setEvent(EVT_DOWN, atoi(value), "Down ajax");
+                        }
+                    }
+                } else if (strncmp(value, "timer", BUF-1) == 0) {
+                    timeEvent_t *tPtr = NULL;
+                    while (nextParam(param, value, BUF-1, &u)) {
+                        if (strncmp(param, "if", BUF-1) == 0) {
+                            unsigned char id;
+    						if (strncmp(value, "new", BUF-1) == 0)
+                                id = -1;
+                            else
+                                id = atoi(value);
+                            setTimeEvent(id, tPtr);
+                        } else if (!tPtr) {
+                            break;
+                        } else if (strncmp(param, "out", BUF-1) == 0) {
+                            tPtr->outputs = atoi(value);
+                        } else if (strncmp(param, "sod", BUF-1) == 0) {
+                            tPtr->secOfDay = atoi(value);
+                        } else if (strncmp(param, "days", BUF-1) == 0) {
+                            tPtr->days = atoi(value);
+                        } else if (strncmp(param, "name", BUF-1) == 0) {
+                            strncpy(tPtr->name, value, BUF-1);
+                        }
+                    }
+                    tPtr->name[BUF-1] = 0;
+                } else if (strncmp(value, "delTimer", BUF-1) == 0) {
+                    if (nextParam(param, value, BUF-1, &u)) {
+                        if (strncmp(param, "id", BUF-1) == 0) {
+                            delTimer(atoi(value));
+                        }
+                    }
+                }
+            }
+
+
+        }
+    */
+    //
+    // Get each of the expected parameters.
+    //
+    //lLEDState = FindCGIParameter("LEDOn", pcParam, iNumParams);
+    //lSpeed = GetCGIParam("speed_percent", pcParam, pcValue, iNumParams,
+    //                     &bParamError);
+
+    //
+    // Was there any error reported by the parameter parser?
+    //
+    if (bParamError) {
+        return "Error";
+    }
+
+    //
+    // We got all the parameters and the values were within the expected ranges
+    // so go ahead and make the changes.
+    //
+    //io_set_led((lLEDState == -1) ? false : true);
+    //io_set_animation_speed((unsigned long) lSpeed);
+
+    //
+    // Send back the default response page.
+    //
+    return "";// genJson();
+}
+
+
+
 struct fs_file *fs_open(char *name) {
     const struct fsdata_file *ptTree = NULL;
     struct fs_file *ptFile = NULL;
-    uriParse_t u;
-    char param[BUF], value[BUF];
+    
     //
     // Allocate memory for the file system structure.
     //
     ptFile = mem_malloc(sizeof(struct fs_file));
     if (NULL == ptFile)
         return(NULL);
-    
-    if (parseUri(name, strlen(name), &u)) {
-        if (!u.uriString || !u.length)
-            return NULL;
+    UARTprintf("fs_open %s (%x)\n", name, ptFile);
 
-        if (firstParam(param, value, BUF-1, &u)) {
-            if (strncmp(param, "cmd", BUF-1) != 0)
-                return NULL;
-            
-            if (strncmp(value, "setTime", BUF-1) == 0) {
-                while (nextParam(param, value, BUF-1, &u)) {
-                    if (strncmp(param, "sod", BUF-1) == 0) {
-                        setTimeSod(atoi(value));
-                    } else if (strncmp(param, "day", BUF-1) == 0) {
-                        setWeekday(atoi(value));
-                    }
-                }
-            } else if (strncmp(value, "up", BUF-1) == 0) {
-                while (nextParam(param, value, BUF-1, &u)) {
-                    if (strncmp(param, "out", BUF-1) == 0) {
-                        setEvent(EVT_UP, atoi(value), "Up ajax");
-                    }
-                }
-            } else if (strncmp(value, "down", BUF-1) == 0) {
-                while (nextParam(param, value, BUF-1, &u)) {
-                    if (strncmp(param, "out", BUF-1) == 0) {
-                        setEvent(EVT_DOWN, atoi(value), "Down ajax");
-                    }
-                }
-            } else if (strncmp(value, "timer", BUF-1) == 0) {
-                time_t *tPtr = NULL;
-                while (nextParam(param, value, BUF-1, &u)) {
-                    if (strncmp(param, "if", BUF-1) == 0) {
-                        unsigned char id;
-						if (strncmp(value, "new", BUF-1) == 0)
-                            id = -1;
-                        else
-                            id = atoi(value);
-                        setTimeEvent(id, tPtr);
-                    } else if (!tPtr) {
-                        break;
-                    } else if (strncmp(param, "out", BUF-1) == 0) {
-                        tPtr->outputs = atoi(value);
-                    } else if (strncmp(param, "sod", BUF-1) == 0) {
-                        tPtr->secOfDay = atoi(value);
-                    } else if (strncmp(param, "days", BUF-1) == 0) {
-                        tPtr->days = atoi(value);
-                    } else if (strncmp(param, "name", BUF-1) == 0) {
-                        strncpy(tPtr->name, value, BUF-1);
-                    }
-                }
-                tPtr->name[BUF-1] = 0;
-            } else if (strncmp(value, "delTimer", BUF-1) == 0) {
-                if (nextParam(param, value, BUF-1, &u)) {
-                    if (strncmp(param, "id", BUF-1) == 0) {
-                        delTimer(atoi(value));
-                    }
-                }
-            }
-        }
-        
-        
-    }
-    
+
     /*
     //
     // Process request to toggle STATUS LED
@@ -376,7 +417,7 @@ struct fs_file *fs_open(char *name) {
     //
     // If I can't find it there, look in the rest of the main file system
     //*/
-    else
+    //else
     {
         //
         // Initialize the file system tree pointer to the root of the linked list.
@@ -392,13 +433,13 @@ struct fs_file *fs_open(char *name) {
             // Compare the requested file "name" to the file name in the
             // current node.
             //
-            if(strncmp(name, (char *)ptTree->name, ptTree->len) == 0)
+            if(strncmp(name, (char *)(ptTree->name), ptTree->len) == 0)
             {
                 //
                 // Fill in the data pointer and length values from the
                 // linked list node.
                 //
-                ptFile->data = (char *)ptTree->data;
+                ptFile->data = (char *)(ptTree->data);
                 ptFile->len = ptTree->len;
 
                 //

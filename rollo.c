@@ -14,6 +14,7 @@
 #include <utils/locator.h>
 #include <utils/lwiplib.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include "rollo.h"
 #define SWITCH_TIME 30 // *10ms
@@ -72,7 +73,7 @@ typedef struct {
 #define MO_FR    (MO | DI | MI | DO | FR)
 #define WE       (SA | SO)
 
-time_t timeEvents[NUM_TIMERS] = {
+timeEvent_t timeEvents[NUM_TIMERS] = {
 {WE,    SET_TIME( 9,30), EVT_UP,   OUT_ALLE,   "WE Hoch"},
 {WE,    SET_TIME(18,00), EVT_DOWN, OUT_ALLE,   "WE Runter"},
 {MO_FR, SET_TIME( 7,30), EVT_UP,   OUT_ALLE,   "Wochentags Hoch"},
@@ -210,7 +211,7 @@ static void serialControl(void);
 
 static void print_TimerEvents() {
 	int size = NUM_TIMERS, i, j;
-	time_t *tePtr = timeEvents;
+	timeEvent_t *tePtr = timeEvents;
 	for (i = 0; i < size; i++) {
 		if (tePtr->days != 0) {
 
@@ -326,6 +327,11 @@ static void wait() {
 		__asm("nop");
 		__asm("nop");
 	}
+}
+
+unsigned char setTimeEvent(signed char idx, timeEvent_t *newTimeEvent) {
+	UARTprintf("setTimeEvent\n");
+	return 0;
 }
 
 /* not used
@@ -734,8 +740,8 @@ void genJson(char *buf, unsigned short size) {
 	    len = snprintf(buf, size, 
            "%s{\"name\":\"%s\",\"maxTime\":%d,\"state\":%s}", 
 		   i?",":"",output[i].name, output[i].maxTime, 
-		   output[i].timer?(output[i].state == UP?"faehrt hoch":"faehrt runter"):
-		   (output[i].state == UP?"oben":output[i].state == DOWN?"unten":"gestoppt"));
+		   (output[i].timer?(output[i].state == UP?"faehrt hoch":"faehrt runter"):
+		   (output[i].state == UP?"oben":(output[i].state == DOWN?"unten":"gestoppt"))));
 		buf += len; size -= len;			   
     }
     len = snprintf(buf, size, "]}");
