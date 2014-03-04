@@ -5,7 +5,9 @@
 #include "../rollo.c"
 //#include "../lmi_fs.c"
 #undef main
+#define __asm(x)
 
+/*
 static inline void jsonPrintTimeEvents() {
     int i;
     printf("\"timeEvents\":[");
@@ -44,7 +46,7 @@ static inline void makeJson() {
     jsonPrintOutputs();
     printf("}");
 } 
-
+*/
 START_TESTS()
 
 START_TEST("make json")

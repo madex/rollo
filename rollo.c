@@ -14,9 +14,8 @@
 #include <utils/locator.h>
 #include <utils/lwiplib.h>
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include "rollo.h"
+
 #define SWITCH_TIME 30 // *10ms
 
 //#undef DEBUG
@@ -711,41 +710,70 @@ void timeIncDay(void) {
 	timeOverflowCorrecter();
 }
 
-char* genJson(char *buf, unsigned short size) {
-	int i, len;
+unsigned int jsonSize;
+
+char *addStringToBuffer(char *string, char *buffer) {
+	while (*string && jsonSize) {
+		*buffer++ = *string++;
+		jsonSize--;
+	}
+	*buffer = 0;
+	return buffer;
+}
+
+char* itoa(int val){
+	static char buf[32] = {0};
+	int i = 30;
+	for(; val && i ; --i, val /= 10)
+		buf[i] = "0123456789"[val % 10];
+	return &buf[i+1];
+}
+
+
+char* genJson(char *buf, unsigned int size) {
+	int i;
 #ifdef JSONTEST   	
 	unsigned short sizeStart = size;
 	char *bufStart = buf;
-#endif	
-	strncat(buf, "{\"timeEvents\":[", size);
+#endif
+	jsonSize = size;
 
-    len = snprintf(buf, size, "{\"timeEvents\":["); buf += len; size -= len;
+	buf = addStringToBuffer(buf,  "{\"timeEvents\":[");
     for (i = 0; i < NUM_TIMERS; i++) {
 		if (timeEvents[i].days) { // Falls kein Tag gesetzt? ungesetzter Timer
-			len = snprintf(buf, size, 
-		       "%s{\"name\":\"%s\",\"days\":%d,\"event\":\"%s\",\"secoundOfDay\":%d,\"id\":%d}",
-			   i?",":"",
-			   timeEvents[i].name?timeEvents[i].name:"", timeEvents[i].days,
-			   timeEvents[i].event == EVT_UP ? "hoch": 
-			   timeEvents[i].event == EVT_DOWN ? "runter":"reserviert",
-			   timeEvents[i].secOfDay , i);
-			buf += len; size -= len;
+			buf = addStringToBuffer(buf, i?",":"");
+			buf = addStringToBuffer(buf, "{\"name\":\"");
+			buf = addStringToBuffer(buf,  timeEvents[i].name?timeEvents[i].name:"");
+			buf = addStringToBuffer(buf, "\",\"days\":");
+			buf = addStringToBuffer(buf, itoa(timeEvents[i].days));
+			buf = addStringToBuffer(buf, ",\"event\":\"");
+			buf = addStringToBuffer(buf, timeEvents[i].event == EVT_UP ? "hoch":
+					                     timeEvents[i].event == EVT_DOWN ? "runter":"reserviert");
+			buf = addStringToBuffer(buf, "\",\"secoundOfDay\":");
+			buf = addStringToBuffer(buf, itoa(timeEvents[i].secOfDay));
+			buf = addStringToBuffer(buf, ",\"id\":");
+			buf = addStringToBuffer(buf, itoa(i));
+			buf = addStringToBuffer(buf, "}");
 		}
 	}
-	len = snprintf(buf, size, 
-	               "],time\":{\"secoundsOfDay\":%d,\"weekDay\":%d},\"outputs\":[", 
-	               secoundsOfDay, weekDay);
-	buf += len; size -= len;
+	buf = addStringToBuffer(buf, ");],time\":{\"secoundsOfDay\":");
+	buf = addStringToBuffer(buf, itoa(secoundsOfDay));
+	buf = addStringToBuffer(buf, "\"weekDay\":");
+	buf = addStringToBuffer(buf, itoa(weekDay));
+	buf = addStringToBuffer(buf, ",\"outputs\":[");
 	for (i = 0; i < NUM_OUTPUTS; i++) {
-	    len = snprintf(buf, size, 
-           "%s{\"name\":\"%s\",\"maxTime\":%d,\"state\":%s}", 
-		   i?",":"",output[i].name, output[i].maxTime, 
-		   (output[i].timer?(output[i].state == UP?"faehrt hoch":"faehrt runter"):
-		   (output[i].state == UP?"oben":(output[i].state == DOWN?"unten":"gestoppt"))));
-		buf += len; size -= len;			   
+		buf = addStringToBuffer(buf, i?",":"");
+		buf = addStringToBuffer(buf, "{\"name\":\"");
+		buf = addStringToBuffer(buf, output[i].name);
+		buf = addStringToBuffer(buf, "\",\"maxTime\":");
+		buf = addStringToBuffer(buf, itoa(output[i].maxTime));
+		buf = addStringToBuffer(buf, ",\"state\":");
+		buf = addStringToBuffer(buf, (output[i].timer?(output[i].state == UP?"faehrt hoch":"faehrt runter"):
+				                (output[i].state == UP?"oben":(output[i].state == DOWN?"unten":"gestoppt"))));
+		buf = addStringToBuffer(buf, "}");
     }
-    len = snprintf(buf, size, "]}");
-	buf += len; size -= len;
+
+	buf = addStringToBuffer(buf, "]}");
 #ifdef JSONTEST    
   	// debug output  
     printf("bufStart:%x, buf:%x, used:%d, sizeStart:%d, size:%d, size diff:%d",

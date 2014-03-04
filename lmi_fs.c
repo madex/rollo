@@ -143,12 +143,12 @@ int parseUri(char *uri, int len, uriParse_t *ps) {
 	ps->uriString = uri;
 	ps->length = 0;
 	ps->elem[ps->length].para_off = 0;
-	if (strncmp(uri, "/ajax?", MIN(6, len)) != 0)
+	if (strncmp(uri, "/ajax.cgi?", MIN(10, len)) != 0)
 		return 0; // fehler
-	if (len < 6)
+	if (len < 10)
 		return 0; // fehler
-	len -= 6;
-	n += 6;
+	len -= 10;
+	n += 10;
 	while (len) {
 		c = uri[n];
 	    switch (st) {
@@ -214,7 +214,7 @@ unsigned char firstParam(char *paramPtr, char *valuePtr, unsigned char len, uriP
 }
 
 #define BUF 30
-
+char buffer[1500];
 struct fs_file *fs_open(char *name) {
     const struct fsdata_file *ptTree = NULL;
     struct fs_file *ptFile = NULL;
@@ -228,6 +228,7 @@ struct fs_file *fs_open(char *name) {
         return(NULL);
 
     if (parseUri(name, strlen(name), &u)) {
+    	char* help;
         if (!u.uriString || !u.length)
             return NULL;
 
@@ -286,12 +287,12 @@ struct fs_file *fs_open(char *name) {
                 }
             }
         }
-        ptFile->data = mem_malloc(1500);
-
-        ptFile->len = 0;
-		ptFile->index = 0;
+        ptFile->data = buffer;
+        help = genJson(buffer, 1500);
+        ptFile->len = help - buffer;
+		ptFile->index = ptFile->len;
 		ptFile->pextension = NULL;
-
+		return ptFile;
     }
     
     /*
