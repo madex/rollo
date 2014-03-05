@@ -5,7 +5,7 @@
 #include "../rollo.c"
 //#include "../lmi_fs.c"
 #undef main
-#define __asm(x)
+//#define __asm(x)
 
 /*
 static inline void jsonPrintTimeEvents() {
@@ -50,8 +50,8 @@ static inline void makeJson() {
 START_TESTS()
 
 START_TEST("make json")
-	char buf[1500];
-    genJson(buf, 1500);
+	char buf[1600];
+    genJson(buf, 1600);
     printf("\n=> %s\n", buf);
 END_TEST()
 

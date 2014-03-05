@@ -712,7 +712,7 @@ void timeIncDay(void) {
 
 unsigned int jsonSize;
 
-char *addStringToBuffer(char *string, char *buffer) {
+char *addStringToBuffer(char *buffer, char *string) {
 	while (*string && jsonSize) {
 		*buffer++ = *string++;
 		jsonSize--;
@@ -767,10 +767,10 @@ char* genJson(char *buf, unsigned int size) {
 		buf = addStringToBuffer(buf, output[i].name);
 		buf = addStringToBuffer(buf, "\",\"maxTime\":");
 		buf = addStringToBuffer(buf, itoa(output[i].maxTime));
-		buf = addStringToBuffer(buf, ",\"state\":");
+		buf = addStringToBuffer(buf, ",\"state\":\"");
 		buf = addStringToBuffer(buf, (output[i].timer?(output[i].state == UP?"faehrt hoch":"faehrt runter"):
 				                (output[i].state == UP?"oben":(output[i].state == DOWN?"unten":"gestoppt"))));
-		buf = addStringToBuffer(buf, "}");
+		buf = addStringToBuffer(buf, "\"}");
     }
 
 	buf = addStringToBuffer(buf, "]}");
