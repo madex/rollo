@@ -26,6 +26,7 @@
 #include "inc/hw_types.h"
 #include "utils/lwiplib.h"
 #include "utils/ustdlib.h"
+#include <utils/uartstdio.h>
 #include "httpserver_raw/fs.h"
 #include "httpserver_raw/fsdata.h"
 #include "rollo.h"
@@ -143,10 +144,12 @@ int parseUri(char *uri, int len, uriParse_t *ps) {
 	ps->uriString = uri;
 	ps->length = 0;
 	ps->elem[ps->length].para_off = 0;
-	if (strncmp(uri, "/ajax.cgi?", MIN(10, len)) != 0)
+	if (strncmp(uri, "/ajax.cgi?", MIN(9, len)) != 0)
 		return 0; // fehler
-	if (len < 10)
+	if (len < 9)
 		return 0; // fehler
+	else if (len == 9)
+		return 1;
 	len -= 10;
 	n += 10;
 	while (len) {
@@ -226,66 +229,65 @@ struct fs_file *fs_open(char *name) {
     ptFile = mem_malloc(sizeof(struct fs_file));
     if (NULL == ptFile)
         return NULL;
-
+    UARTprintf("fs_open %s\n", name);
     if (parseUri(name, strlen(name), &u)) {
     	char* help;
-        if (!u.uriString || !u.length)
-            return NULL;
+        if (u.length) {
+			if (firstParam(param, value, BUF-1, &u)) {
+				if (strncmp(param, "cmd", 3) == 0) {
 
-        if (firstParam(param, value, BUF-1, &u)) {
-            if (strncmp(param, "cmd", 3) != 0)
-                return NULL;
-
-            if (strncmp(value, "setTime", 7) == 0) {
-                while (nextParam(param, value, BUF-1, &u)) {
-                    if (strncmp(param, "sod", 3) == 0) {
-                        setTimeSod(atoi(value));
-                    } else if (strncmp(param, "day", 3) == 0) {
-                        setWeekday(atoi(value));
-                    }
-                }
-            } else if (strncmp(value, "up", 2) == 0) {
-                while (nextParam(param, value, BUF-1, &u)) {
-                    if (strncmp(param, "out", 3) == 0) {
-                        setEvent(EVT_UP, atoi(value), "Up ajax");
-                    }
-                }
-            } else if (strncmp(value, "down", 4) == 0) {
-                while (nextParam(param, value, BUF-1, &u)) {
-                    if (strncmp(param, "out", 3) == 0) {
-                        setEvent(EVT_DOWN, atoi(value), "Down ajax");
-                    }
-                }
-            } else if (strncmp(value, "timer", 5) == 0) {
-                timeEvent_t *tPtr = NULL;
-                while (nextParam(param, value, BUF-1, &u)) {
-                    if (strncmp(param, "if", 2) == 0) {
-                        unsigned char id;
-						if (strncmp(value, "new", 3) == 0)
-                            id = -1;
-                        else
-                            id = atoi(value);
-                        setTimeEvent(id, tPtr);
-                    } else if (!tPtr) {
-                        break;
-                    } else if (strncmp(param, "out", 3) == 0) {
-                        tPtr->outputs = atoi(value);
-                    } else if (strncmp(param, "sod", 3) == 0) {
-                        tPtr->secOfDay = atoi(value);
-                    } else if (strncmp(param, "days", 4) == 0) {
-                        tPtr->days = atoi(value);
-                    } else if (strncmp(param, "name", 4) == 0) {
-                        strncpy(tPtr->name, value, BUF-1);
-                    }
-                }
-                tPtr->name[BUF-1] = 0;
-            } else if (strncmp(value, "delTimer", 8) == 0) {
-                if (nextParam(param, value, BUF-1, &u)) {
-                    if (strncmp(param, "id", 2) == 0) {
-                        delTimer(atoi(value));
-                    }
-                }
-            }
+					if (strncmp(value, "setTime", 7) == 0) {
+						while (nextParam(param, value, BUF-1, &u)) {
+							if (strncmp(param, "sod", 3) == 0) {
+								setTimeSod(atoi(value));
+							} else if (strncmp(param, "weekDay", 3) == 0) {
+								setWeekday(atoi(value));
+							}
+						}
+					} else if (strncmp(value, "up", 2) == 0) {
+						while (nextParam(param, value, BUF-1, &u)) {
+							if (strncmp(param, "out", 3) == 0) {
+								setEvent(EVT_UP, atoi(value), "Up ajax");
+							}
+						}
+					} else if (strncmp(value, "down", 4) == 0) {
+						while (nextParam(param, value, BUF-1, &u)) {
+							if (strncmp(param, "out", 3) == 0) {
+								setEvent(EVT_DOWN, atoi(value), "Down ajax");
+							}
+						}
+					} else if (strncmp(value, "timer", 5) == 0) {
+						timeEvent_t *tPtr = NULL;
+						while (nextParam(param, value, BUF-1, &u)) {
+							if (strncmp(param, "if", 2) == 0) {
+								unsigned char id;
+								if (strncmp(value, "new", 3) == 0)
+									id = -1;
+								else
+									id = atoi(value);
+								setTimeEvent(id, tPtr);
+							} else if (!tPtr) {
+								break;
+							} else if (strncmp(param, "out", 3) == 0) {
+								tPtr->outputs = atoi(value);
+							} else if (strncmp(param, "sod", 3) == 0) {
+								tPtr->secOfDay = atoi(value);
+							} else if (strncmp(param, "days", 4) == 0) {
+								tPtr->days = atoi(value);
+							} else if (strncmp(param, "name", 4) == 0) {
+								strncpy(tPtr->name, value, BUF-1);
+							}
+						}
+						tPtr->name[BUF-1] = 0;
+					} else if (strncmp(value, "delTimer", 8) == 0) {
+						if (nextParam(param, value, BUF-1, &u)) {
+							if (strncmp(param, "id", 2) == 0) {
+								delTimer(atoi(value));
+							}
+						}
+					}
+				}
+			}
         }
         ptFile->data = buffer;
         help = genJson(buffer, 1500);
