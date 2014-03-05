@@ -14,6 +14,7 @@
 #include <utils/locator.h>
 #include <utils/lwiplib.h>
 #include <stdio.h>
+#include <string.h>
 #include "rollo.h"
 
 #define SWITCH_TIME 30 // *10ms
@@ -328,8 +329,31 @@ static void wait() {
 	}
 }
 
+signed char findFreeTimeEvent() {
+	int i;
+	for (i = 0; i < NUM_TIMERS; i++) {
+		if (timeEvents[i].days == 0)
+			return i;
+	}
+	return -1;
+}
+
+void delTimer(unsigned char id) {
+	if (id >= NUM_TIMERS)
+		return;
+	timeEvents[id].days = 0;	
+}
+
 unsigned char setTimeEvent(signed char idx, timeEvent_t *newTimeEvent) {
-	UARTprintf("setTimeEvent\n");
+	//UARTprintf("setTimeEvent\n");
+	if (idx >= NUM_TIMERS) {
+		return 1;
+	} else if (idx < 0) {
+		idx = findFreeTimeEvent();
+		if (idx < 0)
+			return 1;
+	}
+	memcpy(&timeEvents[idx], newTimeEvent, sizeof (timeEvent_t));
 	return 0;
 }
 
@@ -448,10 +472,6 @@ void setWeekday(unsigned char day) {
         weekDay = day;
         timeOverflowCorrecter();
     }
-}
-
-void delTimer(unsigned char id) {
-    
 }
 
 void readSettingsFromEerpom(void) {
@@ -721,23 +741,45 @@ char *addStringToBuffer(char *buffer, char *string) {
 	return buffer;
 }
 
-char* itoa(int val){
-	static char buf[32] = {0};
-	int i = 30, sign = val < 0;
-	if (sign)
-		val = -val;
-	if (val == 0)
-		buf[i--] = '0';
-	for(; val && i ; --i, val /= 10)
-		buf[i] = "0123456789"[val % 10];
-	if (sign)
-		buf[i--] = '-';
-	return &buf[i+1];
+/*
+void memmove(char *dest, const char *source, unsigned length) {
+	if (source < dest) {
+		// Moving from low mem to hi mem; start at end.
+		for (source += length, dest += length; length; --length)
+			*--dest = *--source;
+	} else if (source != dest) {
+		// Moving from hi mem to low mem; start at beginning.
+		for (; length; --length)
+			*dest++ = *source++;
+	}      
+} */
+
+char* itoa(signed long val) { 
+	/** Die Ausgabe von itoa(i) ist identisch zu
+	 *  sprintf(buf, "%d", i);
+	 *  für den gesamten signed 32 bit Bereich. Selbst auf dem PC wesentlich schneller.	 
+	 */	 	
+	static char buf[32]; // vorsicht beim nächsten Aufruf von itoa ist str weg.
+	char *sBuf = &buf[31];
+	unsigned char negative = val < 0;
+	unsigned long value, valueOld;
+	*sBuf = 0;
+	if (negative)
+		value = (unsigned long) -val;
+	else
+		value = (unsigned long) val;
+	do {
+		valueOld = value;
+		value /= 10;
+		*--sBuf = '0' + valueOld - (value * 10); // schneller als % 10
+	}  while (value);
+	if (negative)
+		*--sBuf = '-';
+	return sBuf;
 }
 
-
 char* genJson(char *buf, unsigned int size) {
-	int i;
+	int i, firstTimeEvent = 1;
 #ifdef JSONTEST   	
 	unsigned short sizeStart = size;
 	char *bufStart = buf;
@@ -747,7 +789,8 @@ char* genJson(char *buf, unsigned int size) {
 	buf = addStringToBuffer(buf,  "{\"timeEvents\":[");
     for (i = 0; i < NUM_TIMERS; i++) {
 		if (timeEvents[i].days) { // Falls kein Tag gesetzt? ungesetzter Timer
-			buf = addStringToBuffer(buf, i?",":"");
+			if (!firstTimeEvent)
+				buf = addStringToBuffer(buf, ",");	
 			buf = addStringToBuffer(buf, "{\"name\":\"");
 			buf = addStringToBuffer(buf,  timeEvents[i].name?timeEvents[i].name:"");
 			buf = addStringToBuffer(buf, "\",\"days\":");
@@ -760,6 +803,7 @@ char* genJson(char *buf, unsigned int size) {
 			buf = addStringToBuffer(buf, ",\"id\":");
 			buf = addStringToBuffer(buf, itoa(i));
 			buf = addStringToBuffer(buf, "}");
+			firstTimeEvent = 0;
 		}
 	}
 	buf = addStringToBuffer(buf, "],\"time\":{\"secoundsOfDay\":");

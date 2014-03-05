@@ -225,7 +225,7 @@ struct fs_file *fs_open(char *name) {
     //
     ptFile = mem_malloc(sizeof(struct fs_file));
     if (NULL == ptFile)
-        return(NULL);
+        return NULL;
 
     if (parseUri(name, strlen(name), &u)) {
     	char* help;
@@ -233,55 +233,55 @@ struct fs_file *fs_open(char *name) {
             return NULL;
 
         if (firstParam(param, value, BUF-1, &u)) {
-            if (strncmp(param, "cmd", BUF-1) != 0)
+            if (strncmp(param, "cmd", 3) != 0)
                 return NULL;
 
-            if (strncmp(value, "setTime", BUF-1) == 0) {
+            if (strncmp(value, "setTime", 7) == 0) {
                 while (nextParam(param, value, BUF-1, &u)) {
-                    if (strncmp(param, "sod", BUF-1) == 0) {
+                    if (strncmp(param, "sod", 3) == 0) {
                         setTimeSod(atoi(value));
-                    } else if (strncmp(param, "day", BUF-1) == 0) {
+                    } else if (strncmp(param, "day", 3) == 0) {
                         setWeekday(atoi(value));
                     }
                 }
-            } else if (strncmp(value, "up", BUF-1) == 0) {
+            } else if (strncmp(value, "up", 2) == 0) {
                 while (nextParam(param, value, BUF-1, &u)) {
-                    if (strncmp(param, "out", BUF-1) == 0) {
+                    if (strncmp(param, "out", 3) == 0) {
                         setEvent(EVT_UP, atoi(value), "Up ajax");
                     }
                 }
-            } else if (strncmp(value, "down", BUF-1) == 0) {
+            } else if (strncmp(value, "down", 4) == 0) {
                 while (nextParam(param, value, BUF-1, &u)) {
-                    if (strncmp(param, "out", BUF-1) == 0) {
+                    if (strncmp(param, "out", 3) == 0) {
                         setEvent(EVT_DOWN, atoi(value), "Down ajax");
                     }
                 }
-            } else if (strncmp(value, "timer", BUF-1) == 0) {
+            } else if (strncmp(value, "timer", 5) == 0) {
                 timeEvent_t *tPtr = NULL;
                 while (nextParam(param, value, BUF-1, &u)) {
-                    if (strncmp(param, "if", BUF-1) == 0) {
+                    if (strncmp(param, "if", 2) == 0) {
                         unsigned char id;
-						if (strncmp(value, "new", BUF-1) == 0)
+						if (strncmp(value, "new", 3) == 0)
                             id = -1;
                         else
                             id = atoi(value);
                         setTimeEvent(id, tPtr);
                     } else if (!tPtr) {
                         break;
-                    } else if (strncmp(param, "out", BUF-1) == 0) {
+                    } else if (strncmp(param, "out", 3) == 0) {
                         tPtr->outputs = atoi(value);
-                    } else if (strncmp(param, "sod", BUF-1) == 0) {
+                    } else if (strncmp(param, "sod", 3) == 0) {
                         tPtr->secOfDay = atoi(value);
-                    } else if (strncmp(param, "days", BUF-1) == 0) {
+                    } else if (strncmp(param, "days", 4) == 0) {
                         tPtr->days = atoi(value);
-                    } else if (strncmp(param, "name", BUF-1) == 0) {
+                    } else if (strncmp(param, "name", 4) == 0) {
                         strncpy(tPtr->name, value, BUF-1);
                     }
                 }
                 tPtr->name[BUF-1] = 0;
-            } else if (strncmp(value, "delTimer", BUF-1) == 0) {
+            } else if (strncmp(value, "delTimer", 8) == 0) {
                 if (nextParam(param, value, BUF-1, &u)) {
-                    if (strncmp(param, "id", BUF-1) == 0) {
+                    if (strncmp(param, "id", 2) == 0) {
                         delTimer(atoi(value));
                     }
                 }
