@@ -723,9 +723,15 @@ char *addStringToBuffer(char *buffer, char *string) {
 
 char* itoa(int val){
 	static char buf[32] = {0};
-	int i = 30;
+	int i = 30, sign = val < 0;
+	if (sign)
+		val = -val;
+	if (val == 0)
+		buf[i--] = '0';
 	for(; val && i ; --i, val /= 10)
 		buf[i] = "0123456789"[val % 10];
+	if (sign)
+		buf[i--] = '-';
 	return &buf[i+1];
 }
 
@@ -756,11 +762,11 @@ char* genJson(char *buf, unsigned int size) {
 			buf = addStringToBuffer(buf, "}");
 		}
 	}
-	buf = addStringToBuffer(buf, ");],time\":{\"secoundsOfDay\":");
+	buf = addStringToBuffer(buf, "],\"time\":{\"secoundsOfDay\":");
 	buf = addStringToBuffer(buf, itoa(secoundsOfDay));
-	buf = addStringToBuffer(buf, "\"weekDay\":");
+	buf = addStringToBuffer(buf, ",\"weekDay\":");
 	buf = addStringToBuffer(buf, itoa(weekDay));
-	buf = addStringToBuffer(buf, ",\"outputs\":[");
+	buf = addStringToBuffer(buf, "},\"outputs\":[");
 	for (i = 0; i < NUM_OUTPUTS; i++) {
 		buf = addStringToBuffer(buf, i?",":"");
 		buf = addStringToBuffer(buf, "{\"name\":\"");
