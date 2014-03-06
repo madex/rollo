@@ -194,6 +194,8 @@ unsigned char inputs_new[6], inputs_debounced[6];
  */ 
 static void readInputs(void);
 
+char* itoa(signed long val);
+
 /**
  * If the current time is in the timeEvents array defiened it generates a 
  * event.
@@ -345,7 +347,8 @@ void delTimer(unsigned char id) {
 }
 
 unsigned char setTimeEvent(signed char idx, timeEvent_t *newTimeEvent) {
-	//UARTprintf("setTimeEvent\n");
+	UARTprintf("setTimeEvent(%d) days:%d out:%d evt:%d sod:%d name:%s\n", idx, newTimeEvent->days,
+			   newTimeEvent->outputs, newTimeEvent->event, newTimeEvent->secOfDay, newTimeEvent->name);
 	if (idx >= NUM_TIMERS) {
 		return 1;
 	} else if (idx < 0) {
@@ -462,7 +465,8 @@ void setOutputs(void) {
 
 
 
-void setTimeSod(unsigned short sod) {
+void setTimeSod(unsigned long sod) {
+	UARTprintf("Sod = %s/n", itoa(sod));
     secoundsOfDay = sod;
     timeOverflowCorrecter();
 }
@@ -757,7 +761,7 @@ void memmove(char *dest, const char *source, unsigned length) {
 char* itoa(signed long val) { 
 	/** Die Ausgabe von itoa(i) ist identisch zu
 	 *  sprintf(buf, "%d", i);
-	 *  für den gesamten signed 32 bit Bereich. Selbst auf dem PC wesentlich schneller.	 
+	 *  für den gesamten signed 32 bit Bereich. Selbst auf dem PC wesentlich schneller.
 	 */	 	
 	static char buf[32]; // vorsicht beim nächsten Aufruf von itoa ist str weg.
 	char *sBuf = &buf[31];
@@ -800,6 +804,8 @@ char* genJson(char *buf, unsigned int size) {
 					                     timeEvents[i].event == EVT_DOWN ? "runter":"reserviert");
 			buf = addStringToBuffer(buf, "\",\"secoundOfDay\":");
 			buf = addStringToBuffer(buf, itoa(timeEvents[i].secOfDay));
+			buf = addStringToBuffer(buf, ",\"out\":");
+			buf = addStringToBuffer(buf, itoa(timeEvents[i].outputs));
 			buf = addStringToBuffer(buf, ",\"id\":");
 			buf = addStringToBuffer(buf, itoa(i));
 			buf = addStringToBuffer(buf, "}");

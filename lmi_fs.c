@@ -68,20 +68,19 @@ typedef enum {
 
 int atoi(const char *c) {
     int result = 0;
-    int sign;
-    
-    if (c && *c == '-') {
+    int sign   = 1;
+    if (!c)
+        return 0;
+    // skip starting spaces
+    while (*c == ' ')
+        c++;
+    if (*c == '-') {
         sign = -1;
         c++;
-    } else {
-        sign = 1;
     }
-    while (*c) {
-        if (*c < '0' || *c > '9') {
-            return result * sign;
-        }
-        result += *c - '0';
-        c++;
+    while (*c >= '0' && *c <= '9') {
+        result *= 10;
+        result += *c++ - '0';
     }
     return result * sign;
 }
@@ -239,6 +238,7 @@ struct fs_file *fs_open(char *name) {
 					if (strncmp(value, "setTime", 7) == 0) {
 						while (nextParam(param, value, BUF-1, &u)) {
 							if (strncmp(param, "sod", 3) == 0) {
+								UARTprintf("%s\n", value);
 								setTimeSod(atoi(value));
 							} else if (strncmp(param, "weekDay", 3) == 0) {
 								setWeekday(atoi(value));
@@ -257,29 +257,27 @@ struct fs_file *fs_open(char *name) {
 							}
 						}
 					} else if (strncmp(value, "timer", 5) == 0) {
-						timeEvent_t *tPtr = NULL;
-						while (nextParam(param, value, BUF-1, &u)) {
-							if (strncmp(param, "if", 2) == 0) {
-								unsigned char id;
-								if (strncmp(value, "new", 3) == 0)
-									id = -1;
-								else
-									id = atoi(value);
-								setTimeEvent(id, tPtr);
-							} else if (!tPtr) {
-								break;
-							} else if (strncmp(param, "out", 3) == 0) {
-								tPtr->outputs = atoi(value);
-							} else if (strncmp(param, "sod", 3) == 0) {
-								tPtr->secOfDay = atoi(value);
-							} else if (strncmp(param, "days", 4) == 0) {
-								tPtr->days = atoi(value);
-							} else if (strncmp(param, "name", 4) == 0) {
-								strncpy(tPtr->name, value, BUF-1);
-							}
-						}
-						tPtr->name[BUF-1] = 0;
-					} else if (strncmp(value, "delTimer", 8) == 0) {
+                        timeEvent_t timer = {0, 0, 0, 0, ""};
+                        signed char id = -1;
+                        while (nextParam(param, value, BUF-1, &u)) {
+                            if (strncmp(param, "id", 2) == 0) {
+                                if (strncmp(value, "new", 3) == 0)
+                                    id = -1;
+                                else
+                                    id = atoi(value);
+                            } else if (strncmp(param, "out", 3) == 0) {
+                                timer.outputs = atoi(value);
+                            } else if (strncmp(param, "sod", 3) == 0) {
+                                timer.secOfDay = atoi(value);
+                            } else if (strncmp(param, "days", 4) == 0) {
+                                timer.days = atoi(value);
+                            } else if (strncmp(param, "name", 4) == 0) {
+                                strncpy(timer.name, value, BUF-1);
+                                timer.name[BUF-1] = 0;
+                            }
+                        }
+                        setTimeEvent(id, &timer);
+                    } else if (strncmp(value, "delTimer", 8) == 0) {
 						if (nextParam(param, value, BUF-1, &u)) {
 							if (strncmp(param, "id", 2) == 0) {
 								delTimer(atoi(value));
@@ -290,7 +288,7 @@ struct fs_file *fs_open(char *name) {
 			}
         }
         ptFile->data = buffer;
-        help = genJson(buffer, 1500);
+        help = genJson(buffer, 2500);
         ptFile->len = help - buffer;
 		ptFile->index = ptFile->len;
 		ptFile->pextension = NULL;

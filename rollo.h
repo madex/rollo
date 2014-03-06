@@ -66,7 +66,7 @@ void rollo_Cont(void);
  * @param sod secounds of day, from website js.
  * @param day weekday from website.
  */   
-void setTimeSod(unsigned short sod);
+void setTimeSod(unsigned long sod);
 void setWeekday(unsigned char day);
 
 
