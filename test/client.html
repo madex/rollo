@@ -1179,7 +1179,7 @@ function ajax(urlVars, callback) {
                 callback(httpRequest.responseText);// we're calling our method
             }
         }
-    };    httpRequest.open('GET', "/ajax" + urlVars);
+    };    httpRequest.open('GET', "/ajax.cgi" + urlVars);
     httpRequest.send();
 }
 
@@ -1269,10 +1269,11 @@ function saveTimer() {
         if (myForm.outputs[x].checked)
             newOutputs |= (1 << x);
     }
+    var newEvent = myForm.richtung[0].checked ? 'hoch' : 'runter';
     var newSod = EditHour.value*60*60 + EditMin.value*60;
     var newName = "";
     newName = "&name="+EditName.value;
-    ajax("?cmd=timer&id="+timerId.text+"&out="+newOutputs+"&days="+newDays+"&sod="+newSod+newName, updateJson);
+    ajax("?cmd=timer&id="+timerId.text+"&out="+newOutputs+"&days="+newDays+"&sod="+newSod+newName+"&event="+newEvent, updateJson);
     hide();
 }
 function hide() {

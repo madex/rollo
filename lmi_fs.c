@@ -269,6 +269,11 @@ struct fs_file *fs_open(char *name) {
                                 timer.outputs = atoi(value);
                             } else if (strncmp(param, "sod", 3) == 0) {
                                 timer.secOfDay = atoi(value);
+                            } else if (strncmp(param, "event", 5) == 0) {
+                                if (strncmp(value, "hoch", 4) == 0)
+									timer.event = EVT_UP;
+								else
+									timer.event = EVT_DOWN;
                             } else if (strncmp(param, "days", 4) == 0) {
                                 timer.days = atoi(value);
                             } else if (strncmp(param, "name", 4) == 0) {
