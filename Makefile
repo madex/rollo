@@ -73,7 +73,7 @@ debugc: gcc/${TARGET}.axf
 serial:
 	picocom -b 115200 -f n -d 8 -p n /dev/cu.usbserial-0B010169B
 
-io_fsdata.h: fs/index.html
+io_fsdata.h: ${wildcard fs/*}
 	${ROOT}/tools/makefsfile/makefsfile.exe -i fs -o io_fsdata.h -r -h
 
 all: gcc
