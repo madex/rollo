@@ -72,14 +72,16 @@ typedef struct {
 
 #define MO_FR    (MO | DI | MI | DO | FR)
 #define WE       (SA | SO)
+#define FR_SA    (FR | SA)
+#define SO_DO    (SO | MO | DI | MI | DO)
 
 timeEvent_t timeEvents[NUM_TIMERS] = {
-{WE,    SET_TIME( 9,30), EVT_UP,   OUT_ALLE,   "WE Hoch"},
-{WE,    SET_TIME(19,30), EVT_DOWN, OUT_ALLE,   "WE Runter"},
-{MO_FR, SET_TIME( 7,30), EVT_UP,   OUT_ALLE,   "Wochentags Hoch"},
-{MO_FR, SET_TIME(19,30), EVT_DOWN, OUT_ALLE,   "Wochentags Runter"},
-{WE,    SET_TIME(18,45), EVT_DOWN, OUT_TUEREN, "WE Tueren"},
-{MO_FR, SET_TIME(18,45), EVT_DOWN, OUT_TUEREN, "Wochentags Tueren"},
+{FR_SA, SET_TIME( 9,00), EVT_UP,   OUT_ALLE,   "WE Hoch"},
+{FR_SA, SET_TIME(22,30), EVT_DOWN, OUT_ALLE,   "WE Runter"},
+{SO_DO, SET_TIME( 7,30), EVT_UP,   OUT_ALLE,   "Wochentags Hoch"},
+{SO_DO, SET_TIME(22,30), EVT_DOWN, OUT_ALLE,   "Wochentags Runter"},
+{0,0,0,0,""},
+{0,0,0,0,""},
 {0,0,0,0,""},
 {0,0,0,0,""},
 {0,0,0,0,""},
@@ -180,7 +182,7 @@ output_t output[NUM_OUTPUTS] = {
 {STOP, ROLLO,  9,  8, 0, 0, 2500, "Technik"},
 {STOP, ROLLO,  1,  0, 0, 0, 3500, "Wohnzimmmer links"},
 {STOP, ROLLO,  3,  2, 0, 0, 3500, "Kueche Tuer"},
-{STOP, ROLLO,  7,  6, 0, 0, 2500, "Eltern"},
+{STOP, ROLLO,  7,  6, 0, 0, 2000, "Eltern"},
 {STOP, ROLLO, 31, 30, 0, 0, 2500, "Kind rechts",},
 {STOP, ROLLO, 27, 26, 0, 0, 2500, "Kind links"},
 {STOP, ROLLO, 29, 28, 0, 0, 2500, "Bad"},
