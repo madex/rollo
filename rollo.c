@@ -76,12 +76,12 @@ typedef struct {
 #define SO_DO    (SO | MO | DI | MI | DO)
 
 timeEvent_t timeEvents[NUM_TIMERS] = {
-{FR_SA, SET_TIME( 9,00), EVT_UP,   OUT_ALLE,   "WE Hoch"},
-{FR_SA, SET_TIME(22,30), EVT_DOWN, OUT_ALLE,   "WE Runter"},
-{SO_DO, SET_TIME( 7,30), EVT_UP,   OUT_ALLE,   "Wochentags Hoch"},
-{SO_DO, SET_TIME(22,30), EVT_DOWN, OUT_ALLE,   "Wochentags Runter"},
-{0,0,0,0,""},
-{0,0,0,0,""},
+{WE,    SET_TIME( 9,00), EVT_UP,   OUT_ALLE, "WE Hoch"},
+{FR_SA, SET_TIME(22,30), EVT_DOWN, OUT_ALLE, "WE Runter"},
+{FR_SA, SET_TIME(21,45), EVT_DOWN, OUT_ALLE, "WE Türen Runter"},
+{MO_FR, SET_TIME( 7,30), EVT_UP,   OUT_ALLE, "Wochentags Hoch"},
+{SO_DO, SET_TIME(21,30), EVT_DOWN, OUT_ALLE, "Wochentags Runter"},
+{SO_DO, SET_TIME(21,00), EVT_DOWN, OUT_ALLE, "Wochentags Türen Runter"},
 {0,0,0,0,""},
 {0,0,0,0,""},
 {0,0,0,0,""},

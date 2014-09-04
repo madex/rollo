@@ -175,7 +175,9 @@ int main(void) {
 	 	if (ticks >= 10) {
 	 		ticks -= 10;
 			rollo_Cont();
+			ROM_IntMasterDisable();
 			lwIPTimer(10);
+			ROM_IntMasterEnable();
 	 	}
 	}
 	return 0;
