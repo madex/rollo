@@ -44,18 +44,31 @@ cleanRelease: clean
 #
 # Where to find source files that do not live in this directory.
 #
-VPATH += ${ROOT}/third_party/lwip-1.3.2/apps/httpserver_raw
-VPATH += ${ROOT}/utils
+#VPATH += ${ROOT}/third_party/lwip-1.3.2/apps/httpserver_raw
+#VPATH += ${ROOT}/utils
+
+VPATH=${ROOT}/third_party/uip-1.0/apps/dhcpc
+VPATH+=${ROOT}/drivers
+VPATH+=${ROOT}/third_party/uip-1.0/apps/httpd
+VPATH+=${ROOT}/third_party/uip-1.0/uip
+VPATH+=${ROOT}/utils
 
 #
 # Where to find header files that do not live in the source directory.
 #
-IPATH+=.
-IPATH+=${ROOT}/third_party/lwip-1.3.2/apps
-IPATH+=${ROOT}/third_party/lwip-1.3.2/ports/stellaris/include
-IPATH+=${ROOT}/third_party/lwip-1.3.2/src/include
-IPATH+=${ROOT}/third_party/lwip-1.3.2/src/include/ipv4
-IPATH+=${ROOT}/third_party
+IPATH=.
+IPATH+=..
+IPATH+=${ROOT}
+IPATH+=${ROOT}/third_party/uip-1.0/apps
+IPATH+=${ROOT}/third_party/uip-1.0/uip
+IPATH+=${ROOT}/third_party/uip-1.0
+
+#IPATH+=.
+#IPATH+=${ROOT}/third_party/lwip-1.3.2/apps
+#IPATH+=${ROOT}/third_party/lwip-1.3.2/ports/stellaris/include
+#IPATH+=${ROOT}/third_party/lwip-1.3.2/src/include
+#IPATH+=${ROOT}/third_party/lwip-1.3.2/src/include/ipv4
+#IPATH+=${ROOT}/third_party
 
 AFLAGS+=${patsubst %,-I%,${subst :, ,${IPATH}}}
 CFLAGS+=${patsubst %,-I%,${subst :, ,${IPATH}}}
@@ -85,9 +98,10 @@ clean:
 
 gcc:
 	@mkdir gcc
-		
-OBJ  = startup_gcc.o main.o rollo.o lmi_fs.o uartstdio.o
-OBJ += httpd.o  locator.o lwiplib.o ustdlib.o
+
+OBJ  = startup_gcc.o dhcpc.o httpd.o uartstdio.o uip.o uip_arp.o uip_timer.o ustdlib.o set_pinout.o
+#OBJ  = startup_gcc.o main.o rollo.o lmi_fs.o uartstdio.o
+#OBJ += httpd.o  locator.o lwiplib.o ustdlib.o
 GOBJ = $(patsubst %.o,gcc/%.o,$(OBJ))
 
 gcc/${TARGET}.axf: $(GOBJ)
