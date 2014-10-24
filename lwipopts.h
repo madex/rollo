@@ -136,7 +136,7 @@
 //
 //*****************************************************************************
 #define LWIP_DHCP                       1           // default is 0
-//#define DHCP_DOES_ARP_CHECK             ((LWIP_DHCP) && (LWIP_ARP))
+#define DHCP_DOES_ARP_CHECK             ((LWIP_DHCP) && (LWIP_ARP))
 
 //*****************************************************************************
 //
@@ -388,8 +388,8 @@ extern void UARTprintf(const char *pcString, ...);
 #endif
 
 //#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_OFF
-#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_OFF
-//#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_WARNING
+//#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_OFF
+#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_WARNING
 //#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_SERIOUS
 //#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_SEVERE
 
