@@ -2,7 +2,7 @@
 //
 // uip-conf.h - uIP Project Specific Configuration File
 //
-// Copyright (c) 2009-2013 Texas Instruments Incorporated.  All rights reserved.
+// Copyright (c) 2009-2011 Texas Instruments Incorporated.  All rights reserved.
 // Software License Agreement
 // 
 // Texas Instruments (TI) is supplying this software for use solely and
@@ -18,12 +18,14 @@
 // CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL, OR CONSEQUENTIAL
 // DAMAGES, FOR ANY REASON WHATSOEVER.
 // 
-// This is part of revision 10636 of the DK-LM3S9D96 Firmware Package.
+// This is part of revision 7611 of the EK-LM3S9B92 Firmware Package.
 //
 //*****************************************************************************
 
 #ifndef __UIP_CONF_H__
 #define __UIP_CONF_H__
+
+//#define USE_STATIC_IP
 
 //
 // 8 bit datatype
@@ -125,7 +127,7 @@ typedef unsigned short uip_stats_t;
 // Here we include the header file for the application we are using in
 // this example
 //
-#include "httpd/httpd.h"
+#include "httpd.h"
 
 //
 // Define the uIP Application State type, based on the httpd.h state variable.

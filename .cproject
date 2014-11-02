@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<?fileVersion 4.0.0?>
-
-<cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
+<?fileVersion 4.0.0?><cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
 	<storageModule moduleId="org.eclipse.cdt.core.settings">
 		<cconfiguration id="cdt.managedbuild.toolchain.gnu.cross.base.827686274">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.gnu.cross.base.827686274" moduleId="org.eclipse.cdt.core.settings" name="Default">
@@ -31,6 +29,9 @@
 									<listOptionValue builtIn="false" value="/Users/madex/Develop/StellarisWare/third_party/lwip-1.3.2/src/include"/>
 									<listOptionValue builtIn="false" value="/Users/madex/Develop/StellarisWare/third_party/lwip-1.3.2/src/include/ipv4"/>
 									<listOptionValue builtIn="false" value="/Users/madex/Develop/StellarisWare/third_party/lwip-1.3.2/apps"/>
+									<listOptionValue builtIn="false" value="/Users/madex/Develop/StellarisWare/third_party/uip-1.0"/>
+									<listOptionValue builtIn="false" value="/Users/madex/Develop/StellarisWare/third_party/uip-1.0/apps"/>
+									<listOptionValue builtIn="false" value="/Users/madex/Develop/StellarisWare/third_party/uip-1.0/uip"/>
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.2084589492" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="UART_BUFFERED"/>

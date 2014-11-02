@@ -2,7 +2,7 @@
 //
 // startup_gcc.c - Startup code for use with GNU tools.
 //
-// Copyright (c) 2009-2010 Texas Instruments Incorporated.  All rights reserved.
+// Copyright (c) 2009-2011 Texas Instruments Incorporated.  All rights reserved.
 // Software License Agreement
 // 
 // Texas Instruments (TI) is supplying this software for use solely and
@@ -18,10 +18,11 @@
 // CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL, OR CONSEQUENTIAL
 // DAMAGES, FOR ANY REASON WHATSOEVER.
 // 
-// This is part of revision 5585 of the EK-LM3S9B96 Firmware Package.
+// This is part of revision 7611 of the EK-LM3S9B92 Firmware Package.
 //
 //*****************************************************************************
-
+#include <sys/stat.h>
+#include <stdlib.h>
 //*****************************************************************************
 //
 // Forward declaration of the default fault handlers.
@@ -31,8 +32,15 @@ void ResetISR(void);
 static void NmiSR(void);
 static void FaultISR(void);
 static void IntDefaultHandler(void);
+
+//*****************************************************************************
+//
+// External declarations for the interrupt handlers used by the application.
+//
+//*****************************************************************************
+extern void EthernetIntHandler(void);
+extern void SysTickIntHandler(void);
 extern void UARTStdioIntHandler(void);
-extern void lwIPEthernetIntHandler(void);
 
 //*****************************************************************************
 //
@@ -47,6 +55,45 @@ extern int main(void);
 //
 //*****************************************************************************
 static unsigned long pulStack[1024];
+extern unsigned int  _HEAP_START;
+extern unsigned int  _HEAP_END;
+
+static caddr_t heap = NULL;
+
+
+// low level bulk memory allocator - used by malloc
+caddr_t _sbrk ( int increment ) {
+    
+    caddr_t prevHeap;
+    caddr_t nextHeap;
+    
+    if (heap == NULL) {
+        // first allocation
+        heap = (caddr_t)&_HEAP_START;
+    }
+    
+    prevHeap = heap;
+    
+    // Always return data aligned on a 8 byte boundary
+    nextHeap = (caddr_t)(((unsigned int)(heap + increment) + 7) & ~7);
+    
+    // get current stack pointer
+    //register caddr_t stackPtr asm ("sp");
+    //caddr_t stackPtr;
+    //__asm("ldr stackPtr = sp");
+    
+    // Check enough space and there is no collision with stack coming the other way
+    // if stack is above start of heap
+    if (/* (((caddr_t)&_HEAP_START < stackPtr) && (nextHeap > stackPtr)) ||*/
+        (nextHeap >= (caddr_t)&_HEAP_END)) {
+        return NULL; // error - no more memory
+    } else {
+        heap = nextHeap;
+        return (caddr_t) prevHeap;
+    }
+}
+
+
 
 //*****************************************************************************
 //
@@ -73,13 +120,13 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // Debug monitor handler
     0,                                      // Reserved
     IntDefaultHandler,                      // The PendSV handler
-    IntDefaultHandler,                      // The SysTick handler
+    SysTickIntHandler,                      // The SysTick handler
     IntDefaultHandler,                      // GPIO Port A
     IntDefaultHandler,                      // GPIO Port B
     IntDefaultHandler,                      // GPIO Port C
     IntDefaultHandler,                      // GPIO Port D
     IntDefaultHandler,                      // GPIO Port E
-    UARTStdioIntHandler,                    // UART0 Rx and Tx
+    UARTStdioIntHandler,                      // UART0 Rx and Tx
     IntDefaultHandler,                      // UART1 Rx and Tx
     IntDefaultHandler,                      // SSI0 Rx and Tx
     IntDefaultHandler,                      // I2C0 Master and Slave
@@ -116,7 +163,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // CAN0
     IntDefaultHandler,                      // CAN1
     IntDefaultHandler,                      // CAN2
-    lwIPEthernetIntHandler,                      // Ethernet
+    EthernetIntHandler,                     // Ethernet
     IntDefaultHandler,                      // Hibernate
     IntDefaultHandler,                      // USB0
     IntDefaultHandler,                      // PWM Generator 3
@@ -144,7 +191,6 @@ extern unsigned long _edata;
 extern unsigned long _bss;
 extern unsigned long _ebss;
 
-int main(void);
 //*****************************************************************************
 //
 // This is the code that gets called when the processor first starts execution
@@ -181,7 +227,7 @@ ResetISR(void)
           "        it      lt\n"
           "        strlt   r2, [r0], #4\n"
           "        blt     zero_loop");
-          
+
     //
     // Call the application's entry point.
     //
@@ -216,7 +262,7 @@ NmiSR(void)
 static void
 FaultISR(void)
 {
-	//
+    //
     // Enter an infinite loop.
     //
     while(1)

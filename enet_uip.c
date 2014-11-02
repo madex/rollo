@@ -2,7 +2,7 @@
 //
 // enet_uip.c - Sample WebServer Application for Ethernet Demo
 //
-// Copyright (c) 2009-2013 Texas Instruments Incorporated.  All rights reserved.
+// Copyright (c) 2009-2011 Texas Instruments Incorporated.  All rights reserved.
 // Software License Agreement
 // 
 // Texas Instruments (TI) is supplying this software for use solely and
@@ -18,7 +18,7 @@
 // CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL, OR CONSEQUENTIAL
 // DAMAGES, FOR ANY REASON WHATSOEVER.
 // 
-// This is part of revision 10636 of the DK-LM3S9D96 Firmware Package.
+// This is part of revision 7611 of the EK-LM3S9B92 Firmware Package.
 //
 //*****************************************************************************
 
@@ -32,7 +32,6 @@
 #include "driverlib/flash.h"
 #include "driverlib/gpio.h"
 #include "driverlib/interrupt.h"
-#include "driverlib/pin_map.h"
 #include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/systick.h"
@@ -41,11 +40,8 @@
 #include "utils/ustdlib.h"
 #include "uip/uip.h"
 #include "uip/uip_arp.h"
-#include "httpd/httpd.h"
+#include "httpd.h"
 #include "dhcpc/dhcpc.h"
-#include "grlib/grlib.h"
-#include "drivers/kitronix320x240x16_ssd2119_8bit.h"
-#include "drivers/set_pinout.h"
 
 //*****************************************************************************
 //
@@ -57,6 +53,9 @@
 //! an Ethernet address.  A basic web site is served over the Ethernet port.
 //! The web site displays a few lines of text, and a counter that increments
 //! each time the page is sent.
+//!
+//! UART0, connected to the FTDI virtual COM port and running at 115,200,
+//! 8-N-1, is used to display messages from this application.
 //!
 //! For additional details on uIP, refer to the uIP web page at:
 //! http://www.sics.se/~adam/uip/
@@ -105,20 +104,6 @@ static volatile unsigned long g_ulFlags;
 //
 //*****************************************************************************
 volatile unsigned long g_ulTickCounter = 0;
-
-//*****************************************************************************
-//
-// The application's graphics context.
-//
-//*****************************************************************************
-tContext g_sContext;
-
-//*****************************************************************************
-//
-// The vertical position of the status string on the LCD display.
-//
-//*****************************************************************************
-#define STATUS_Y 120
 
 //*****************************************************************************
 //
@@ -224,64 +209,10 @@ SysTickIntHandler(void)
 
 //*****************************************************************************
 //
-// Display the current IP address on the screen and transmit it via the UART.
-//
-//*****************************************************************************
-void
-ShowIPAddress(const uip_ipaddr_t sIPAddr)
-{
-    char pcBuffer[24];
-
-    usprintf(pcBuffer, "IP: %d.%d.%d.%d", sIPAddr[0] & 0xff,
-             sIPAddr[0] >> 8, sIPAddr[1] & 0xff, sIPAddr[1] >> 8);
-    UARTprintf("%s\n", pcBuffer);
-    GrContextFontSet(&g_sContext, g_pFontCmss18b);
-    GrStringDrawCentered(&g_sContext, pcBuffer, -1,
-                 GrContextDpyWidthGet(&g_sContext) / 2,
-                 GrContextDpyHeightGet(&g_sContext) - 20, true);
-
-}
-
-//*****************************************************************************
-//
-// Display a status string on the LCD and also transmit it via the serial port.
-//
-//*****************************************************************************
-void
-UpdateStatus(char *pcStatus)
-{
-    tRectangle sRect;
-
-    //
-    // Dump that status string to the serial port.
-    //
-    UARTprintf("%s\n", pcStatus);
-
-    //
-    // Clear any previous status message.
-    //
-    sRect.sXMin = 0;
-    sRect.sXMax = GrContextDpyWidthGet(&g_sContext) - 1;
-    sRect.sYMin = STATUS_Y - 16;
-    sRect.sYMax = STATUS_Y + 16;
-    GrContextForegroundSet(&g_sContext, ClrBlack);
-    GrRectFill(&g_sContext, &sRect);
-
-    //
-    // Display the new status string.
-    //
-    GrContextFontSet(&g_sContext, g_pFontCmss20);
-    GrContextForegroundSet(&g_sContext, ClrWhite);
-    GrStringDrawCentered(&g_sContext, pcStatus, -1,
-                         GrContextDpyWidthGet(&g_sContext) / 2, STATUS_Y, 0);
-}
-
-//*****************************************************************************
-//
-// When using the timer module in UIP, this function is required to return
-// the number of ticks.  Note that the file "clock-arch.h" must be provided
-// by the application, and define CLOCK_CONF_SECONDS as the number of ticks
-// per second, and must also define the typedef "clock_time_t".
+//! When using the timer module in UIP, this function is required to return
+//! the number of ticks.  Note that the file "clock-arch.h" must be provided
+//! by the application, and define CLOCK_CONF_SECONDS as the number of ticks
+//! per second, and must also define the typedef "clock_time_t".
 //
 //*****************************************************************************
 clock_time_t
@@ -373,8 +304,8 @@ dhcpc_configured(const struct dhcpc_state *s)
     uip_sethostaddr(&s->ipaddr);
     uip_setnetmask(&s->netmask);
     uip_setdraddr(&s->default_router);
-    ShowIPAddress(s->ipaddr);
-    UpdateStatus("Web server ready");
+    UARTprintf("IP: %d.%d.%d.%d\n", s->ipaddr[0] & 0xff, s->ipaddr[0] >> 8,
+               s->ipaddr[1] & 0xff, s->ipaddr[1] >> 8);
 }
 
 //*****************************************************************************
@@ -623,18 +554,12 @@ main(void)
     long lPeriodicTimer, lARPTimer;
     unsigned long ulUser0, ulUser1;
     unsigned long ulTemp;
-    tRectangle sRect;
 
     //
     // Set the clocking to run directly from the crystal.
     //
     ROM_SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
                        SYSCTL_XTAL_16MHZ);
-
-    //
-    // Set the pinout appropriately for this board.
-    //
-    PinoutSet();
 
     //
     // Adjust the pointer to be aligned on an odd half word address so that
@@ -646,42 +571,11 @@ main(void)
     // Initialize the UART.
     //
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+    GPIOPinConfigure(GPIO_PA0_U0RX);
+    GPIOPinConfigure(GPIO_PA1_U0TX);
     ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
     UARTStdioInit(0);
     UARTprintf("\033[2JEthernet with uIP\n");
-
-    //
-    // Initialize the display driver.
-    //
-    Kitronix320x240x16_SSD2119Init();
-
-    //
-    // Initialize the graphics context.
-    //
-    GrContextInit(&g_sContext, &g_sKitronix320x240x16_SSD2119);
-
-    //
-    // Fill the top 24 rows of the screen with blue to create the banner.
-    //
-    sRect.sXMin = 0;
-    sRect.sYMin = 0;
-    sRect.sXMax = GrContextDpyWidthGet(&g_sContext) - 1;
-    sRect.sYMax = 23;
-    GrContextForegroundSet(&g_sContext, ClrDarkBlue);
-    GrRectFill(&g_sContext, &sRect);
-
-    //
-    // Put a white box around the banner.
-    //
-    GrContextForegroundSet(&g_sContext, ClrWhite);
-    GrRectDraw(&g_sContext, &sRect);
-
-    //
-    // Put the application name in the middle of the banner.
-    //
-    GrContextFontSet(&g_sContext, g_pFontCm20);
-    GrStringDrawCentered(&g_sContext, "enet-uip", -1,
-                         GrContextDpyWidthGet(&g_sContext) / 2, 10, 0);
 
     //
     // Enable the uDMA controller and set up the control table base.
@@ -708,7 +602,7 @@ main(void)
         // We should never get here.  This is an error if the MAC address has
         // not been programmed into the device.  Exit the program.
         //
-        UpdateStatus("No MAC address!");
+        UARTprintf("MAC Address Not Programmed!\n");
         while(1)
         {
         }
@@ -769,11 +663,11 @@ main(void)
     //
     // Wait for the link to become active.
     //
-    UpdateStatus("Waiting for Link");
+    UARTprintf("Waiting for Link\n");
     while((ROM_EthernetPHYRead(ETH_BASE, PHY_MR1) & 0x0004) == 0)
     {
     }
-    UpdateStatus("Link Established");
+    UARTprintf("Link Established\n");
 
     //
     // Enable the Ethernet Controller.
@@ -803,15 +697,15 @@ main(void)
     uip_ipaddr(ipaddr, DEFAULT_IPADDR0, DEFAULT_IPADDR1, DEFAULT_IPADDR2,
                DEFAULT_IPADDR3);
     uip_sethostaddr(ipaddr);
-    ShowIPAddress(ipaddr);
-    UpdateStatus("Web server ready");
+    UARTprintf("IP: %d.%d.%d.%d\n", DEFAULT_IPADDR0, DEFAULT_IPADDR1,
+               DEFAULT_IPADDR2, DEFAULT_IPADDR3);
     uip_ipaddr(ipaddr, DEFAULT_NETMASK0, DEFAULT_NETMASK1, DEFAULT_NETMASK2,
                DEFAULT_NETMASK3);
     uip_setnetmask(ipaddr);
 #else
     uip_ipaddr(ipaddr, 0, 0, 0, 0);
     uip_sethostaddr(ipaddr);
-    UpdateStatus("Waiting for IP address...\n");
+    UARTprintf("Waiting for IP address...\n");
     uip_ipaddr(ipaddr, 0, 0, 0, 0);
     uip_setnetmask(ipaddr);
 #endif

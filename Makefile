@@ -29,7 +29,7 @@ AR=${PREFIX}-ar
 LD=${PREFIX}-ld
 OBJDUMP=${PREFIX}-objdump
 OBJCOPY=${PREFIX}-objcopy
-LDFLAGS=--gc-sections 
+LDFLAGS=--gc-sections
 LIBGCC=${shell ${CC} ${CFLAGS} -print-file-name=libgcc.a}
 LIBC=${shell ${CC} ${CFLAGS} -print-file-name=libc.a}
 LIBM=${shell ${CC} ${CFLAGS} -print-file-name=libm.a}
@@ -47,9 +47,8 @@ cleanRelease: clean
 #VPATH += ${ROOT}/third_party/lwip-1.3.2/apps/httpserver_raw
 #VPATH += ${ROOT}/utils
 
-VPATH=${ROOT}/third_party/uip-1.0/apps/dhcpc
 VPATH+=${ROOT}/drivers
-VPATH+=${ROOT}/third_party/uip-1.0/apps/httpd
+VPATH+=${ROOT}/third_party/uip-1.0/apps/dhcpc
 VPATH+=${ROOT}/third_party/uip-1.0/uip
 VPATH+=${ROOT}/utils
 
@@ -99,7 +98,8 @@ clean:
 gcc:
 	@mkdir gcc
 
-OBJ  = startup_gcc.o dhcpc.o httpd.o uartstdio.o uip.o uip_arp.o uip_timer.o ustdlib.o set_pinout.o
+OBJ  = startup_gcc.o uartstdio.o uip.o uip_arp.o psock.o uip_timer.o dhcpc.o
+OBJ += ustdlib.o enet_uip.o httpd.o httpd-fs.o http-strings.o httpd-cgi.o
 #OBJ  = startup_gcc.o main.o rollo.o lmi_fs.o uartstdio.o
 #OBJ += httpd.o  locator.o lwiplib.o ustdlib.o
 GOBJ = $(patsubst %.o,gcc/%.o,$(OBJ))

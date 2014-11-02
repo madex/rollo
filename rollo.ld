@@ -51,5 +51,15 @@ SECTIONS
         *(.bss*)
         *(COMMON)
         _ebss = .;
+	. = ALIGN (8);
+       _end = .;
     } > SRAM
 }
+
+/* end of allocated ram _end */
+PROVIDE( _HEAP_START = _end );
+
+/* end of the heap -> align 8 byte */ 
+PROVIDE ( _HEAP_END = ALIGN(ORIGIN(SRAM) + LENGTH(SRAM) - 8 ,8) );
+
+
