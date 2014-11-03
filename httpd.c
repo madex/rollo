@@ -60,6 +60,9 @@
 #include "httpd-fs.h"
 #include "httpd-cgi.h"
 #include "http-strings.h"
+#include "inc/hw_types.h"
+#include "utils/uartstdio.h"
+#include "utils/ustdlib.h"
 
 #include <string.h>
 
@@ -248,6 +251,7 @@ PT_THREAD(handle_output(struct httpd_state *s))
 static
 PT_THREAD(handle_input(struct httpd_state *s))
 {
+  //UARTprintf("handle input = |%s|\n", s->sin);
   PSOCK_BEGIN(&s->sin);
 
   PSOCK_READTO(&s->sin, ISO_space);
@@ -278,7 +282,7 @@ PT_THREAD(handle_input(struct httpd_state *s))
 
     if(strncmp(s->inputbuf, http_referer, 8) == 0) {
       s->inputbuf[PSOCK_DATALEN(&s->sin) - 2] = 0;
-      /*      httpd_log(&s->inputbuf[9]);*/
+           /* httpd_log(&s->inputbuf[9]); */
     }
   }
   
@@ -304,6 +308,7 @@ httpd_appcall(void)
     PSOCK_INIT(&s->sin, s->inputbuf, sizeof(s->inputbuf) - 1);
     PSOCK_INIT(&s->sout, s->inputbuf, sizeof(s->inputbuf) - 1);
     PT_INIT(&s->outputpt);
+    //UARTprintf("filename = |%s|\n", s->filename);
     s->state = STATE_WAITING;
     /*    timer_set(&s->timer, CLOCK_SECOND * 100);*/
     s->timer = 0;
