@@ -63,6 +63,8 @@
 #include "inc/hw_types.h"
 #include "utils/uartstdio.h"
 #include "utils/ustdlib.h"
+#include "rollo.h"
+#include "httpd-uri-cmd.h"
 
 #include <string.h>
 
@@ -108,84 +110,8 @@ PT_THREAD(send_file(struct httpd_state *s))
   PSOCK_END(&s->sout);
 }
 /*---------------------------------------------------------------------------*/
-static
-PT_THREAD(send_part_of_file(struct httpd_state *s))
-{
-  PSOCK_BEGIN(&s->sout);
-
-  PSOCK_SEND(&s->sout, s->file.data, s->len);
-  
-  PSOCK_END(&s->sout);
-}
-/*---------------------------------------------------------------------------*/
-static void
-next_scriptstate(struct httpd_state *s)
-{
-  char *p;
-  p = strchr(s->scriptptr, ISO_nl) + 1;
-  s->scriptlen -= (unsigned short)(p - s->scriptptr);
-  s->scriptptr = p;
-}
-/*---------------------------------------------------------------------------*/
-static
-PT_THREAD(handle_script(struct httpd_state *s))
-{
-  char *ptr;
-  
-  PT_BEGIN(&s->scriptpt);
 
 
-  while(s->file.len > 0) {
-
-    /* Check if we should start executing a script. */
-    if(*s->file.data == ISO_percent &&
-       *(s->file.data + 1) == ISO_bang) {
-      s->scriptptr = s->file.data + 3;
-      s->scriptlen = s->file.len - 3;
-      if(*(s->scriptptr - 1) == ISO_colon) {
-	httpd_fs_open(s->scriptptr + 1, &s->file);
-	PT_WAIT_THREAD(&s->scriptpt, send_file(s));
-      } else {
-	PT_WAIT_THREAD(&s->scriptpt,
-		       httpd_cgi(s->scriptptr)(s, s->scriptptr));
-      }
-      next_scriptstate(s);
-      
-      /* The script is over, so we reset the pointers and continue
-	 sending the rest of the file. */
-      s->file.data = s->scriptptr;
-      s->file.len = s->scriptlen;
-    } else {
-      /* See if we find the start of script marker in the block of HTML
-	 to be sent. */
-
-      if(s->file.len > uip_mss()) {
-	s->len = uip_mss();
-      } else {
-	s->len = s->file.len;
-      }
-
-      if(*s->file.data == ISO_percent) {
-	ptr = strchr(s->file.data + 1, ISO_percent);
-      } else {
-	ptr = strchr(s->file.data, ISO_percent);
-      }
-      if(ptr != NULL &&
-	 ptr != s->file.data) {
-	s->len = (int)(ptr - s->file.data);
-	if(s->len >= uip_mss()) {
-	  s->len = uip_mss();
-	}
-      }
-      PT_WAIT_THREAD(&s->scriptpt, send_part_of_file(s));
-      s->file.data += s->len;
-      s->file.len -= s->len;
-      
-    }
-  }
-  
-  PT_END(&s->scriptpt);
-}
 /*---------------------------------------------------------------------------*/
 static
 PT_THREAD(send_headers(struct httpd_state *s, const char *statushdr))
@@ -222,27 +148,37 @@ PT_THREAD(handle_output(struct httpd_state *s))
   char *ptr;
   
   PT_BEGIN(&s->outputpt);
- 
-  if(!httpd_fs_open(s->filename, &s->file)) {
-    httpd_fs_open(http_404_html, &s->file);
-    strcpy(s->filename, http_404_html);
-    PT_WAIT_THREAD(&s->outputpt,
-		   send_headers(s,
-		   http_header_404));
-    PT_WAIT_THREAD(&s->outputpt,
-		   send_file(s));
-  } else {
-    PT_WAIT_THREAD(&s->outputpt,
-		   send_headers(s,
-		   http_header_200));
-    ptr = strchr(s->filename, ISO_period);
-    if(ptr != NULL && strncmp(ptr, http_shtml, 6) == 0) {
-      PT_INIT(&s->scriptpt);
-      PT_WAIT_THREAD(&s->outputpt, handle_script(s));
-    } else {
-      PT_WAIT_THREAD(&s->outputpt,
-		     send_file(s));
-    }
+  switch (httpd_fs_open(s->filename, &s->file)) {
+      case 0: // FILE NOT FOUND
+          
+          httpd_fs_open(http_404_html, &s->file);
+          strcpy(s->filename, http_404_html);
+          PT_WAIT_THREAD(&s->outputpt,
+                         send_headers(s,
+                         http_header_404));
+          PT_WAIT_THREAD(&s->outputpt,
+                         send_file(s));
+          break;
+          
+      case 1: // ajax.cgi
+          PT_WAIT_THREAD(&s->outputpt,
+                         send_headers(s,
+                                      http_header_200));
+          ptr = strchr(s->filename, ISO_period);
+          //genJson();
+          httpd_uri_cmd(&s->file);
+          
+          break;
+          
+      default: // fs file  // irgendwo ist hier der Fehler
+          PT_WAIT_THREAD(&s->outputpt,
+                         send_headers(s,
+                         http_header_200));
+          ptr = strchr(s->filename, ISO_period);
+          
+          PT_WAIT_THREAD(&s->outputpt,
+                         send_file(s));
+          break;
   }
   PSOCK_CLOSE(&s->sout);
   PT_END(&s->outputpt);

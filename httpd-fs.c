@@ -35,6 +35,7 @@
 
 #include "httpd.h"
 #include "httpd-fs.h"
+#include <string.h>
 
 #ifndef NULL
 #define NULL 0
@@ -69,6 +70,8 @@ httpd_fs_strcmp(const char *str1, const char *str2)
   ++i;
   goto loop;
 }
+
+const char ajax[10] = "/ajax.cgi";
 /*-----------------------------------------------------------------------------------*/
 int
 httpd_fs_open(const char *name, struct httpd_fs_file *file)
@@ -78,17 +81,20 @@ httpd_fs_open(const char *name, struct httpd_fs_file *file)
 #endif /* HTTPD_FS_STATISTICS */
   struct fsdata_file_noconst *f;
 
-  for(f = (struct fsdata_file_noconst *)FS_ROOT;
+  if (strncmp(name, ajax, 9) == 0)
+      return 1;
+    
+  for (f = (struct fsdata_file_noconst *)FS_ROOT;
       f != NULL;
       f = (struct fsdata_file_noconst *)f->next) {
 
-    if(httpd_fs_strcmp(name, f->name) == 0) {
+    if (httpd_fs_strcmp(name, f->name) == 0) {
       file->data = f->data;
       file->len = f->len;
 #if HTTPD_FS_STATISTICS
       ++count[i];
 #endif /* HTTPD_FS_STATISTICS */
-      return 1;
+      return 2;
     }
 #if HTTPD_FS_STATISTICS
     ++i;

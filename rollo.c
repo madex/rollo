@@ -2,7 +2,6 @@
 #include <inc/hw_memmap.h>
 #include <inc/hw_types.h>
 #include <driverlib/debug.h>
-#include <driverlib/ethernet.h>
 #include <driverlib/gpio.h>
 #include <driverlib/rom.h>
 #include <driverlib/uart.h>
@@ -10,10 +9,6 @@
 #include <driverlib/systick.h>
 #include <driverlib/timer.h>
 #include <utils/uartstdio.h>
-#include <httpserver_raw/httpd.h>
-#include <utils/locator.h>
-#include <utils/lwiplib.h>
-#include <stdio.h>
 #include <string.h>
 #include "rollo.h"
 

@@ -98,8 +98,8 @@ clean:
 gcc:
 	@mkdir gcc
 
-OBJ  = startup_gcc.o uartstdio.o uip.o uip_arp.o psock.o uip_timer.o dhcpc.o
-OBJ += ustdlib.o enet_uip.o httpd.o httpd-fs.o http-strings.o httpd-cgi.o
+OBJ  = startup_gcc.o uartstdio.o uip.o uip_arp.o psock.o uip_timer.o dhcpc.o httpd-uri-cmd.o
+OBJ += ustdlib.o enet_uip.o httpd.o httpd-fs.o http-strings.o httpd-cgi.o rollo.o
 #OBJ  = startup_gcc.o main.o rollo.o lmi_fs.o uartstdio.o
 #OBJ += httpd.o  locator.o lwiplib.o ustdlib.o
 GOBJ = $(patsubst %.o,gcc/%.o,$(OBJ))
