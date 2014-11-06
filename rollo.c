@@ -503,9 +503,9 @@ beispiel:
 
 void rollo_init(void) {
  	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA | SYSCTL_PERIPH_GPIOB | SYSCTL_PERIPH_GPIOD);
-    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+    //GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
     wait();
-    UARTStdioInit(0);
+    //UARTStdioInit(0);
 
 	GPIOPinTypeGPIOInput(GPIO_PORTA_BASE, OUT(IN_R1) | OUT(IN_H2) | OUT(IN_R2) | OUT(IN_H3) | OUT(IN_R3));
 	GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, OUT(IN_H1));
@@ -779,7 +779,7 @@ char* itoa(signed long val) {
 
 char* genJson(char *buf, unsigned int size) {
 	int i, firstTimeEvent = 1;
-#ifdef JSONTEST   	
+#ifdef JSONTEST
 	unsigned short sizeStart = size;
 	char *bufStart = buf;
 #endif
@@ -789,7 +789,7 @@ char* genJson(char *buf, unsigned int size) {
     for (i = 0; i < NUM_TIMERS; i++) {
 		if (timeEvents[i].days) { // Falls kein Tag gesetzt? ungesetzter Timer
 			if (!firstTimeEvent)
-				buf = addStringToBuffer(buf, ",");	
+				buf = addStringToBuffer(buf, ",");
 			buf = addStringToBuffer(buf, "{\"name\":\"");
 			buf = addStringToBuffer(buf,  timeEvents[i].name?timeEvents[i].name:"");
 			buf = addStringToBuffer(buf, "\",\"days\":");
@@ -825,8 +825,8 @@ char* genJson(char *buf, unsigned int size) {
     }
 
 	buf = addStringToBuffer(buf, "]}");
-#ifdef JSONTEST    
-  	// debug output  
+#ifdef JSONTEST
+  	// debug output
     printf("bufStart:%x, buf:%x, used:%d, sizeStart:%d, size:%d, size diff:%d",
 	       bufStart, buf, buf-bufStart, sizeStart, size, sizeStart-size);
 #endif

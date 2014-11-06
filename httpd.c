@@ -142,43 +142,40 @@ PT_THREAD(send_headers(struct httpd_state *s, const char *statushdr))
   PSOCK_END(&s->sout);
 }
 /*---------------------------------------------------------------------------*/
+char buffer[1500];
 static
 PT_THREAD(handle_output(struct httpd_state *s))
 {
   char *ptr;
-  
+  int fopenResult;
   PT_BEGIN(&s->outputpt);
-  switch (httpd_fs_open(s->filename, &s->file)) {
-      case 0: // FILE NOT FOUND
-          
-          httpd_fs_open(http_404_html, &s->file);
-          strcpy(s->filename, http_404_html);
-          PT_WAIT_THREAD(&s->outputpt,
-                         send_headers(s,
-                         http_header_404));
-          PT_WAIT_THREAD(&s->outputpt,
-                         send_file(s));
-          break;
-          
-      case 1: // ajax.cgi
-          PT_WAIT_THREAD(&s->outputpt,
-                         send_headers(s,
-                                      http_header_200));
-          ptr = strchr(s->filename, ISO_period);
-          //genJson();
-          httpd_uri_cmd(&s->file);
-          
-          break;
-          
-      default: // fs file  // irgendwo ist hier der Fehler
-          PT_WAIT_THREAD(&s->outputpt,
-                         send_headers(s,
-                         http_header_200));
-          ptr = strchr(s->filename, ISO_period);
-          
-          PT_WAIT_THREAD(&s->outputpt,
-                         send_file(s));
-          break;
+  fopenResult = httpd_fs_open(s->filename, &s->file);
+  if (fopenResult == 0) { // FILE NOT FOUND
+      httpd_fs_open(http_404_html, &s->file);
+		 strcpy(s->filename, http_404_html);
+	  PT_WAIT_THREAD(&s->outputpt,
+					 send_headers(s,
+					 http_header_404));
+	  PT_WAIT_THREAD(&s->outputpt,
+					 send_file(s));
+  } else if (fopenResult == 1) { // ajax.cgi
+	  PT_WAIT_THREAD(&s->outputpt,
+					 send_headers(s,
+								  http_header_200));
+	  ptr = strchr(s->filename, ISO_period);
+	  httpd_uri_cmd(s->filename);
+	  ptr = genJson(buffer, 1500);
+	  s->file.data = buffer;
+	  s->file.len  = ptr - buffer;
+	  PT_WAIT_THREAD(&s->outputpt,
+			  		 send_file(s));
+  } else {
+	  PT_WAIT_THREAD(&s->outputpt,
+					 send_headers(s,
+					 http_header_200));
+	  ptr = strchr(s->filename, ISO_period);
+	  PT_WAIT_THREAD(&s->outputpt,
+					 send_file(s));
   }
   PSOCK_CLOSE(&s->sout);
   PT_END(&s->outputpt);

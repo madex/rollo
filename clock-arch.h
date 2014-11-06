@@ -29,7 +29,7 @@
 // Define how many clock ticks in one second.
 // Note:  This should match the value of SYSTICKHZ in the main program.
 //
-#define CLOCK_CONF_SECOND       100
+#define CLOCK_CONF_SECOND       1000
 
 //
 // Define the clock type used for returning system ticks.

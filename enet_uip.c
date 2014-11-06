@@ -559,9 +559,10 @@ main(void)
     //
     // Set the clocking to run directly from the crystal.
     //
-    ROM_SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
-                       SYSCTL_XTAL_16MHZ);
-
+    //ROM_SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
+    //                   SYSCTL_XTAL_16MHZ);
+    ROM_SysCtlClockSet(SYSCTL_SYSDIV_2_5 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ); // 80 MHz
+    ROM_SysTickPeriodSet(80000L); // 1 ms Tick
     //
     // Adjust the pointer to be aligned on an odd half word address so that
     // DMA can be used.
@@ -626,7 +627,7 @@ main(void)
     //
     // Configure SysTick for a periodic interrupt.
     //
-    ROM_SysTickPeriodSet(ROM_SysCtlClockGet() / SYSTICKHZ);
+    //ROM_SysTickPeriodSet(ROM_SysCtlClockGet() / SYSTICKHZ);
     ROM_SysTickEnable();
     ROM_SysTickIntEnable();
 
