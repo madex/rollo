@@ -42,6 +42,7 @@
 #include "uip/uip_arp.h"
 #include "httpd.h"
 #include "dhcpc/dhcpc.h"
+#include "rollo.h"
 
 //*****************************************************************************
 //
@@ -200,7 +201,7 @@ SysTickIntHandler(void)
     // Increment the system tick count.
     //
     g_ulTickCounter++;
-
+	rollo_Tick();
     //
     // Indicate that a SysTick interrupt has occurred.
     //
@@ -554,7 +555,7 @@ main(void)
     long lPeriodicTimer, lARPTimer;
     unsigned long ulUser0, ulUser1;
     unsigned long ulTemp;
-
+	unsigned long ticks;
     //
     // Set the clocking to run directly from the crystal.
     //
@@ -740,12 +741,13 @@ main(void)
     dhcpc_init(&sTempAddr.addr[0], 6);
     dhcpc_request();
 #endif
-
+	rollo_init();
     //
     // Main Application Loop.
     //
     lPeriodicTimer = 0;
     lARPTimer = 0;
+	ticks = 0;
     while(true)
     {
         //
@@ -765,6 +767,12 @@ main(void)
             HWREGBITW(&g_ulFlags, FLAG_SYSTICK) = 0;
             lPeriodicTimer += SYSTICKMS;
             lARPTimer += SYSTICKMS;
+			if (ticks)
+				ticks--;
+			else {
+				ticks = 9;
+				rollo_Cont();
+			}
         }
 
         //

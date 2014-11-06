@@ -1,6 +1,6 @@
 #include "httpd-uri-cmd.h"
 #include "rollo.h"
-#include "string.h"
+#include <string.h>
 
 #define MIN(x, y) ((x)<(y)?(x):(y))
 #define MAX_ELEMETS 10
