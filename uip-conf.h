@@ -71,7 +71,7 @@ typedef unsigned short uip_stats_t;
 //
 // Maximum number of TCP connections.
 //
-#define UIP_CONF_MAX_CONNECTIONS    2
+#define UIP_CONF_MAX_CONNECTIONS    4
 
 //
 // Maximum number of listening TCP ports.
@@ -91,7 +91,7 @@ typedef unsigned short uip_stats_t;
 //
 // uIP buffer size.
 //
-#define UIP_CONF_BUFFER_SIZE        1600
+#define UIP_CONF_BUFFER_SIZE        2000
 
 //
 // uIP buffer is defined in the application.

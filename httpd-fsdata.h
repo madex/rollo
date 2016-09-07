@@ -40,8 +40,8 @@
 struct fsdata_file {
   const struct fsdata_file *next;
   const char *name;
-  const char *data;
-  const int len;
+  const unsigned char *data;
+  const unsigned int len;
 #ifdef HTTPD_FS_STATISTICS
 #if HTTPD_FS_STATISTICS == 1
   u16_t count;
@@ -52,8 +52,8 @@ struct fsdata_file {
 struct fsdata_file_noconst {
   struct fsdata_file *next;
   char *name;
-  char *data;
-  int len;
+  unsigned char *data;
+  unsigned int len;
 #ifdef HTTPD_FS_STATISTICS
 #if HTTPD_FS_STATISTICS == 1
   u16_t count;

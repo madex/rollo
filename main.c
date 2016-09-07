@@ -118,7 +118,7 @@ int main(void) {
     rollo_init();
 	ROM_IntMasterEnable();
     SysTickIntRegister(SysTickHandler);
-	UARTprintf("\nRollocontrol v0.4 (Martin Ongsiek)\n");
+	UARTprintf("\nRollocontrol v0.5 (Martin Ongsiek)\n");
 
 	ROM_FlashUserGet(&ulUser0, &ulUser1);
 	if((ulUser0 == 0xffffffff) || (ulUser1 == 0xffffffff))

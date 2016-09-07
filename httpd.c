@@ -260,6 +260,7 @@ httpd_appcall(void)
     uip_abort();
   }
 }
+
 /*---------------------------------------------------------------------------*/
 /**
  * \brief      Initialize the web server

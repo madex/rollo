@@ -43,6 +43,8 @@
 #include "httpd.h"
 #include "dhcpc/dhcpc.h"
 #include "rollo.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 //*****************************************************************************
 //
@@ -749,6 +751,8 @@ main(void)
     lPeriodicTimer = 0;
     lARPTimer = 0;
 	ticks = 0;
+	bool linkLost = false;
+	uint32_t reconnectTimer = 1000U*60U*60U*24U;
     while(true)
     {
         //
@@ -773,8 +777,26 @@ main(void)
 			else {
 				ticks = 9;
 				rollo_Cont();
+				if (reconnectTimer-- == 0U) {
+					linkLost = true;
+					reconnectTimer = 1000U*60U*60U*24U;
+				}
+				if ((ROM_EthernetPHYRead(ETH_BASE, PHY_MR1) & 0x0004) == 0)
+					linkLost = true;
+				else if (linkLost) {
+					linkLost = false;
+				    ROM_EthernetMACAddrSet(ETH_BASE, (unsigned char *)&sTempAddr);
+				    uip_setethaddr(sTempAddr);
+				    httpd_init();
+#ifndef USE_STATIC_IP
+				    dhcpc_init(&sTempAddr.addr[0], 6);
+				    dhcpc_request();
+#endif
+
+				}
 			}
         }
+
 
         //
         // Check for an RX Packet and read it.

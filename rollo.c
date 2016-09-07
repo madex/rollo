@@ -28,6 +28,10 @@
 
 #define OUT_ALLE   (OUT(0) | OUT(1) | OUT(2) | OUT(3) | OUT(4) |  \
                     OUT(5) | OUT(6) | OUT(7) | OUT(8) | OUT(9))
+#define OUT_ALLE2   (OUT(0) | OUT(1) | OUT(2) | OUT(3) | OUT(4) |  \
+                    OUT(5) | OUT(6) | OUT(7) | OUT(9))
+#define OUT_OHNE_MO (OUT(1) | OUT(2) | OUT(3) |  \
+                     OUT(6) | OUT(7) | OUT(9))
 #define OUT_TUEREN (OUT(0) | OUT(4) | OUT(5))
 #define SET_TIME(hour, minute)   (hour*60*60 + minute*60)
 
@@ -66,15 +70,17 @@ typedef struct {
 #define SO (1 << 6)
 
 #define MO_FR    (MO | DI | MI | DO | FR)
-#define WE       (SA | SO)
+#define SO_DO    (SO | MO | DI | MI | DO)
+#define SA_SO    (SA | SO)
+#define FR_SA    (FR | SA)
 
 timeEvent_t timeEvents[NUM_TIMERS] = {
-{WE,    SET_TIME( 9,30), EVT_UP,   OUT_ALLE,   "WE Hoch"},
-{WE,    SET_TIME(19,30), EVT_DOWN, OUT_ALLE,   "WE Runter"},
-{MO_FR, SET_TIME( 7,30), EVT_UP,   OUT_ALLE,   "Wochentags Hoch"},
-{MO_FR, SET_TIME(19,30), EVT_DOWN, OUT_ALLE,   "Wochentags Runter"},
-{WE,    SET_TIME(18,45), EVT_DOWN, OUT_TUEREN, "WE Tueren"},
-{MO_FR, SET_TIME(18,45), EVT_DOWN, OUT_TUEREN, "Wochentags Tueren"},
+{SA_SO, SET_TIME( 8,30), EVT_UP,   OUT_ALLE2,   "WE Hoch"},
+{FR_SA, SET_TIME(18,45), EVT_DOWN, OUT_TUEREN,  "WE Tueren Runter"},
+{FR_SA, SET_TIME(19,30), EVT_DOWN, OUT_OHNE_MO, "WE Runter"},
+{MO_FR, SET_TIME( 7,30), EVT_UP,   OUT_ALLE2,   "Wochentags Hoch"},
+{SO_DO, SET_TIME(18,45), EVT_DOWN, OUT_TUEREN,  "Wochentags Tueren"},
+{SO_DO, SET_TIME(19,30), EVT_DOWN, OUT_OHNE_MO, "Wochentags Runter"},
 {0,0,0,0,""},
 {0,0,0,0,""},
 {0,0,0,0,""},
@@ -133,10 +139,10 @@ input_t inputs[NUM_INPUTS] = {
  {0, "Technik",            EVT_UP,    OUT(3)},
  {0, "Eltern",             EVT_DOWN,  OUT(6)},
  {0, "Eltern",             EVT_UP,    OUT(6)},
- {0, "Kind rechts",        EVT_DOWN,  OUT(7)},
- {0, "Kind rechts",        EVT_UP,    OUT(7)},
- {0, "Kind links",         EVT_DOWN,  OUT(8)},
- {0, "Kind links",         EVT_UP,    OUT(8)},
+ {0, "Gaestezimmer",       EVT_DOWN,  OUT(7)},
+ {0, "Gaestezimmer",       EVT_UP,    OUT(7)},
+ {0, "Moritz",             EVT_DOWN,  OUT(8)},
+ {0, "Moritz",             EVT_UP,    OUT(8)},
  {0, "Bad",                EVT_DOWN,  OUT(9)},
  {0, "Bad",                EVT_UP,    OUT(9)},
  {0, "Alle",               EVT_DOWN,  OUT_ALLE},
@@ -176,8 +182,8 @@ output_t output[NUM_OUTPUTS] = {
 {STOP, ROLLO,  1,  0, 0, 0, 3500, "Wohnzimmmer links"},
 {STOP, ROLLO,  3,  2, 0, 0, 3500, "Kueche Tuer"},
 {STOP, ROLLO,  7,  6, 0, 0, 2500, "Eltern"},
-{STOP, ROLLO, 31, 30, 0, 0, 2500, "Kind rechts",},
-{STOP, ROLLO, 27, 26, 0, 0, 2500, "Kind links"},
+{STOP, ROLLO, 31, 30, 0, 0, 2500, "Gaestezimmer",},
+{STOP, ROLLO, 27, 26, 0, 0, 2500, "Moritz"},
 {STOP, ROLLO, 29, 28, 0, 0, 2500, "Bad"},
 };
 
@@ -216,8 +222,8 @@ static void print_TimerEvents() {
 										  (tePtr->secOfDay % 3600) / 60);
 			if (tePtr->days == MO_FR)
 				UARTprintf("MO-FR ");
-			else if (tePtr->days == WE)
-				UARTprintf("WE    ");
+			else if (tePtr->days == SO_DO)
+				UARTprintf("SO-DO ");
 			else {
 				if (tePtr->days & MO)
 					UARTprintf("MO ");
