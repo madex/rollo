@@ -1130,7 +1130,7 @@ table td {
 <body id="top" style>
 
 <script type="text/javascript">
-
+var first = true;
 function getCurSecOfDay() {
 	var d = new Date();
     return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
@@ -1287,6 +1287,10 @@ function updateJson(resp) {
     myJson = JSON.parse(resp);  
     var myClock = document.getElementById("Clock");
     var myJSONView = document.getElementById("JSON-View");
+    if (first && Math.abs(myJson.time.secoundsOfDay - getCurSecOfDay()) > 5) {
+        stellen();
+        first = false;
+    }
 
     myClock.innerHTML = "<h4>" + nameOfDay(myJson.time.weekDay) + "  " +
                         secOfDay2String(myJson.time.secoundsOfDay) + "</h4>";
