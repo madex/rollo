@@ -26,11 +26,13 @@ typedef enum {
 int atoi(const char *c) {
     int result = 0;
     int sign   = 1;
-    if (!c)
+    if (!c) {
         return 0;
+    }
     // skip starting spaces
-    while (*c == ' ')
+    while (*c == ' ') {
         c++;
+    }
     if (*c == '-') {
         sign = -1;
         c++;
@@ -86,8 +88,9 @@ void decodeString(char *dest, char *src, unsigned int len) {
                 len -= 5;
                 src += 5;
             }
-        } else
+        } else {
             *dest++ = c;
+        }
     }
     *dest++ = 0;
 }
@@ -100,12 +103,14 @@ int parseUri(char *uri, int len, uriParse_t *ps) {
     ps->uriString = uri;
     ps->length = 0;
     ps->elem[ps->length].para_off = 0;
-    if (strncmp(uri, "/ajax.cgi?", MIN(9, len)) != 0)
+    if (strncmp(uri, "/ajax.cgi?", MIN(9, len)) != 0) {
         return 0; // fehler
-    if (len < 9)
+    }
+    if (len < 9) {
         return 0; // fehler
-    else if (len == 9)
+    } else if (len == 9) {
         return 1;
+    }
     len -= 10;
     n += 10;
     while (len) {
@@ -138,8 +143,9 @@ int parseUri(char *uri, int len, uriParse_t *ps) {
                     ps->elem[ps->length].value_len = valueLen;
                     st = PARAM_START;
                     ps->length++;
-                    if (ps->length == MAX_ELEMETS)
+                    if (ps->length == MAX_ELEMETS) {
                         return 0;
+                    }
                 }
                 break;
         }
@@ -157,8 +163,9 @@ int parseUri(char *uri, int len, uriParse_t *ps) {
 static unsigned char idx;
 
 unsigned char nextParam(char *paramPtr, char *valuePtr, unsigned char len, uriParse_t *u) {
-    if (!u || !u->uriString || !valuePtr || !paramPtr  || idx >= u->length)
+    if (!u || !u->uriString || !valuePtr || !paramPtr  || idx >= u->length) {
         return 0;
+    }
     decodeString(paramPtr, &(u->uriString[u->elem[idx].para_off]),
                  MIN(u->elem[idx].para_len, len));
     decodeString(valuePtr, &(u->uriString[u->elem[idx].value_off]),
@@ -206,19 +213,21 @@ void httpd_uri_cmd(char* uri) {
                         signed char id = -1;
                         while (nextParam(param, value, BUF-1, &u)) {
                             if (strncmp(param, "id", 2) == 0) {
-                                if (strncmp(value, "new", 3) == 0)
+                                if (strncmp(value, "new", 3) == 0) {
                                     id = -1;
-                                else
+                                } else {
                                     id = atoi(value);
+                                }
                             } else if (strncmp(param, "out", 3) == 0) {
                                 timer.outputs = atoi(value);
                             } else if (strncmp(param, "sod", 3) == 0) {
                                 timer.secOfDay = atoi(value);
                             } else if (strncmp(param, "event", 5) == 0) {
-                                if (strncmp(value, "hoch", 4) == 0)
+                                if (strncmp(value, "hoch", 4) == 0) {
                                     timer.event = EVT_UP;
-                                else
+                                } else {
                                     timer.event = EVT_DOWN;
+                                }
                             } else if (strncmp(param, "days", 4) == 0) {
                                 timer.days = atoi(value);
                             } else if (strncmp(param, "name", 4) == 0) {
@@ -239,5 +248,3 @@ void httpd_uri_cmd(char* uri) {
         }
     }
 }
-
-
