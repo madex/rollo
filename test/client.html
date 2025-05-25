@@ -4,7 +4,7 @@
 /* ================================================================== *\
 
    Name: Cardinal
-   Info: a small, “mobile first” CSS framework by Chris Bracco
+   Info: a small, ï¿½mobile firstï¿½ CSS framework by Chris Bracco
    Link: http://cardinalcss.com
 
    TABLE OF CONTENTS
@@ -1179,11 +1179,17 @@ function ajax(urlVars, callback) {
                 callback(httpRequest.responseText);// we're calling our method
             }
         }
-    };    httpRequest.open('GET', "/ajax.cgi" + urlVars);
+    };    
+	httpRequest.open('GET', "/ajax.cgi" + urlVars);
     httpRequest.send();
 }
 
+function save() {
+	setCookie("j",JSON.stringify(myJson.timeEvents), 60*24*365*2)
+}
+
 var myJson;
+var save = false;
 function stellen() {
     ajax('?cmd=setTime&sod='+getCurSecOfDay()+'&weekDay='+getCurWeekDay(), updateJson);
 }
@@ -1272,26 +1278,71 @@ function saveTimer() {
     var newEvent = myForm.richtung[0].checked ? 'hoch' : 'runter';
     var newSod = EditHour.value*60*60 + EditMin.value*60;
     var newName = "";
+	save = true;
     newName = "&name="+EditName.value;
     ajax("?cmd=timer&id="+timerId.text+"&out="+newOutputs+"&days="+newDays+"&sod="+newSod+newName+"&event="+newEvent, updateJson);
     hide();
 }
+
+function sendTimersFromCookie() {
+    const cookieName = "timerData"; // oder wie dein Cookie heiÃŸt
+    const cookie = document.cookie
+        .split('; ')
+        .find(row => row.startsWith(cookieName + '='));
+    if (!cookie) {
+        console.warn("Kein Timer-Cookie gefunden.");
+        return;
+    }
+    try {
+        const json = decodeURIComponent(cookie.split('=')[1]);
+        const timers = JSON.parse(json);
+
+        timers.forEach(timer => {
+            const id = timer.id;
+            const name = encodeURIComponent(timer.name || "");
+            const days = timer.days || 0;
+            const sod = timer.secoundOfDay || 0;
+            const out = timer.out || 0;
+            const event = timer.event;
+            const url = `?cmd=timer&id=${id}&out=${out}&days=${days}&sod=${sod}&name=${name}&event=${event}`;
+            ajax(url, updateJson);
+        });
+    } catch (e) {
+        console.error("Fehler beim Parsen des Timer-JSONs aus dem Cookie:", e);
+    }
+}
+
 function hide() {
     EditPage.style.display = "none";
 }
 function delTimer() {
+	save = true;
     ajax("?cmd=delTimer&id="+timerId.text, updateJson);
     hide();
 }
+
+function setCookie(c_name,value,expireminutes)
+{
+   var exdate=new Date();
+   exdate.setMinutes(exdate.getMinutes()+expireminutes);
+   document.cookie=c_name+ "=" +escape(value)+
+   ((expireminutes==null) ? "" : ";expires="+exdate.toUTCString());
+}
+
 function updateJson(resp) {
     myJson = JSON.parse(resp);  
     var myClock = document.getElementById("Clock");
     var myJSONView = document.getElementById("JSON-View");
     if (first && Math.abs(myJson.time.secoundsOfDay - getCurSecOfDay()) > 5) {
-        stellen();
+        //if myJson.
+		stellen();
         first = false;
+		
     }
+	if (save) {
 
+		save = false;
+	}
     myClock.innerHTML = "<h4>" + nameOfDay(myJson.time.weekDay) + "  " +
                         secOfDay2String(myJson.time.secoundsOfDay) + "</h4>";
     TimeEvents.innerHTML = getTimerList(myJson.timeEvents);
