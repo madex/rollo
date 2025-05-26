@@ -10,8 +10,11 @@ char test4[] = "/ajax?cmd=timer&id=0&out=1023&days=96&sod=34200&name=WE%20H%C3%B
 char test5[] = "/ajax?cmd=delTimer&id=5";
 char test6[] = "/ajax";
 char test7[] = "/ajax?cmd=timer&id=new&out=5&days=96&sod=21780&name=Neuer%20Timer%20wer";
-char test8[] = "/ajax?cmd=timer&id=new&out=0&days=0&sod=0&name=%C3%84%C3%9C%C3%96%C3%A4%C3%BC%C3%B6%C3%9F"; // ÄÜÖäüöß
+char test8[] = "/ajax?cmd=timer&id=new&out=0&days=0&sod=0&name=%C3%84%C3%9C%C3%96%C3%A4%C3%BC%C3%B6%C3%9F"; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 char test9[] = "/ajax?cmd=down&out=128";
+char veryLong[] = "/ajax?cmd=timer&name=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+char broken[] = "/ajax?cmd=timer&name=%C3";
+char many[] = "/ajax?cmd=1&a=1&b=2&c=3&d=4&e=5&f=6&g=7&h=8&i=9&j=10&k=11";
 
 #define MAX_ELEMETS 10
 
@@ -218,5 +221,14 @@ int main() {
     printf("\ntest9 = %s\n", test9);
     if (parseUri(test9, strlen(test9), &u))
     	printParams(&u);
+	printf("\nveryLong = %s\n", veryLong);
+	if (parseUri(veryLong, strlen(veryLong), &u))
+		printParams(&u); // ðŸ’¥ erwartet: Buffer overflow mÃ¶glich
+	printf("\nbroken = %s\n", broken);
+	if (parseUri(broken, strlen(broken), &u))
+		printParams(&u); // ðŸ’¥ erwartet: MerkwÃ¼rdiger Output oder Absturz
+	printf("\nmany = %s\n", many);
+	if (parseUri(many, strlen(many), &u))
+		printParams(&u); // ðŸ’¥ letzter Parameter Ã¼berschreibt evtl. Speicher
     return 0;
 }
