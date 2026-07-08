@@ -1,0 +1,13 @@
+CONFIG_IDF_TARGET="esp32c3"
+
+# 1 ms FreeRTOS-Tick, damit die 10-ms-Regelschleife sauber laeuft
+CONFIG_FREERTOS_HZ=1000
+
+# Konsole nur ueber UART0 (GPIO20/21). USB-Serial-JTAG (GPIO18/19) wird
+# deaktiviert, weil GPIO18 als RCK_I fuer das Eingangs-Schieberegister dient.
+CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
+
+# Timer-Kommandos vom Web-UI koennen lange URIs haben (Name + alle Parameter)
+CONFIG_HTTPD_MAX_URI_LEN=1024
+
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=4096
