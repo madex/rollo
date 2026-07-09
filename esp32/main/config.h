@@ -23,9 +23,12 @@
  *    waehrend Reset/Boot nicht zufaellig gelatcht werden.
  */
 
-/* Steuerleitungen Schieberegister (ESP-Ausgaenge) */
+/* Steuerleitungen Schieberegister (ESP-Ausgaenge)
+ * Achtung: GPIO8 bewusst NICHT verwenden - auf den meisten C3-Boards
+ * (DevKitM-1, DevKitC-02, SuperMini) haengt dort die Onboard-LED bzw.
+ * WS2812-RGB-LED; der Schiebetakt wuerde sie zufaellig ansteuern. */
 #define PIN_SER_O   GPIO_NUM_2   /* Daten     Ausgangs-SR (Relais)   - alt: PB5 */
-#define PIN_SCK_O   GPIO_NUM_8   /* Takt      Ausgangs-SR            - alt: PD0 */
+#define PIN_SCK_O   GPIO_NUM_19  /* Takt      Ausgangs-SR            - alt: PD0 */
 #define PIN_RCK_O   GPIO_NUM_10  /* Latch     Ausgangs-SR            - alt: PB6 */
 #define PIN_SER_I   GPIO_NUM_9   /* Daten     Eingangs-Scan-SR       - alt: PD3 */
 #define PIN_SCK_I   GPIO_NUM_3   /* Takt      Eingangs-Scan-SR       - alt: PD4 */

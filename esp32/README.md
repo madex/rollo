@@ -28,7 +28,7 @@ unverändert übernommen. Neu bzw. geändert:
 | Signal  | Funktion                        | alt (LM3S) | neu (ESP32-C3) |
 |---------|---------------------------------|------------|----------------|
 | SER_O   | Daten Ausgangs-SR (Relais)      | PB5        | GPIO2          |
-| SCK_O   | Takt Ausgangs-SR                | PD0        | GPIO8          |
+| SCK_O   | Takt Ausgangs-SR                | PD0        | GPIO19         |
 | RCK_O   | Latch Ausgangs-SR               | PB6        | GPIO10         |
 | SER_I   | Daten Eingangs-Scan-SR          | PD3        | GPIO9          |
 | SCK_I   | Takt Eingangs-Scan-SR           | PD4        | GPIO3          |
