@@ -28,16 +28,16 @@ unverändert übernommen. Neu bzw. geändert:
 | Signal  | Funktion                        | alt (LM3S) | neu (ESP32-C3) |
 |---------|---------------------------------|------------|----------------|
 | SER_O   | Daten Ausgangs-SR (Relais)      | PB5        | GPIO2          |
-| SCK_O   | Takt Ausgangs-SR                | PD0        | GPIO19         |
+| SCK_O   | Takt Ausgangs-SR                | PD0        | GPIO8          |
 | RCK_O   | Latch Ausgangs-SR               | PB6        | GPIO10         |
 | SER_I   | Daten Eingangs-Scan-SR          | PD3        | GPIO9          |
-| SCK_I   | Takt Eingangs-Scan-SR           | PD4        | GPIO0          |
+| SCK_I   | Takt Eingangs-Scan-SR           | PD4        | GPIO6          |
 | RCK_I   | Latch Eingangs-Scan-SR          | PA7        | GPIO18         |
 | IN_H1   | Matrix-Rücklesung 1             | PD2        | GPIO3          |
 | IN_R1   | Matrix-Rücklesung 2             | PA6        | GPIO1          |
 | IN_H2   | Matrix-Rücklesung 3             | PA3        | GPIO4          |
 | IN_R2   | Matrix-Rücklesung 4             | PA2        | GPIO5          |
-| IN_H3   | Matrix-Rücklesung 5             | PA5        | GPIO6          |
+| IN_H3   | Matrix-Rücklesung 5             | PA5        | GPIO0          |
 | IN_R3   | Matrix-Rücklesung 6             | PA4        | GPIO7          |
 
 Die Belegung liegt zentral in `main/config.h` und ist leicht änderbar.

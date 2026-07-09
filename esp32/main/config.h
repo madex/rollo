@@ -24,14 +24,20 @@
  */
 
 /* Steuerleitungen Schieberegister (ESP-Ausgaenge)
- * Achtung: GPIO8 bewusst NICHT verwenden - auf den meisten C3-Boards
- * (DevKitM-1, DevKitC-02, SuperMini) haengt dort die Onboard-LED bzw.
- * WS2812-RGB-LED; der Schiebetakt wuerde sie zufaellig ansteuern. */
+ *
+ * Board-spezifische Erkenntnisse (GOOUUU-ESP32-C3, empirisch ermittelt):
+ *  - GPIO3/4/5 = RGB-LED (rot/gruen/blau, gemeinsame Anode, aktiv low).
+ *    Nur als hochohmige Eingaenge verwenden, sonst leuchtet die LED.
+ *  - GPIO0 darf NUR Eingang sein: als getakteter Ausgang bricht die
+ *    Versorgung zusammen -> endloser POWERON-Reset-Bootloop.
+ *  - GPIO19 (USB D+) vorsichtshalber ebenfalls nicht als Ausgang nutzen.
+ *  - GPIO8 ist auf diesem Board frei (keine LED, anders als beim
+ *    DevKitM-1/SuperMini, wo dort die Onboard-LED haengt). */
 #define PIN_SER_O   GPIO_NUM_2   /* Daten     Ausgangs-SR (Relais)   - alt: PB5 */
-#define PIN_SCK_O   GPIO_NUM_19  /* Takt      Ausgangs-SR            - alt: PD0 */
+#define PIN_SCK_O   GPIO_NUM_8   /* Takt      Ausgangs-SR            - alt: PD0 */
 #define PIN_RCK_O   GPIO_NUM_10  /* Latch     Ausgangs-SR            - alt: PB6 */
 #define PIN_SER_I   GPIO_NUM_9   /* Daten     Eingangs-Scan-SR       - alt: PD3 */
-#define PIN_SCK_I   GPIO_NUM_0   /* Takt      Eingangs-Scan-SR       - alt: PD4 */
+#define PIN_SCK_I   GPIO_NUM_6   /* Takt      Eingangs-Scan-SR       - alt: PD4 */
 #define PIN_RCK_I   GPIO_NUM_18  /* Latch     Eingangs-Scan-SR       - alt: PA7 */
 
 /* Ruecklese-Eingaenge der Tastenmatrix (ESP-Eingaenge)
@@ -43,7 +49,7 @@
 #define PIN_IN_R1   GPIO_NUM_1   /* alt: PA6 */
 #define PIN_IN_H2   GPIO_NUM_4   /* alt: PA3 */
 #define PIN_IN_R2   GPIO_NUM_5   /* alt: PA2 */
-#define PIN_IN_H3   GPIO_NUM_6   /* alt: PA5 */
+#define PIN_IN_H3   GPIO_NUM_0   /* alt: PA5 */
 #define PIN_IN_R3   GPIO_NUM_7   /* alt: PA4 */
 
 /* Interne Pull-ups an den Ruecklese-Eingaengen aktivieren (1) oder
