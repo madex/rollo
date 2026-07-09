@@ -31,9 +31,9 @@ unverändert übernommen. Neu bzw. geändert:
 | SCK_O   | Takt Ausgangs-SR                | PD0        | GPIO19         |
 | RCK_O   | Latch Ausgangs-SR               | PB6        | GPIO10         |
 | SER_I   | Daten Eingangs-Scan-SR          | PD3        | GPIO9          |
-| SCK_I   | Takt Eingangs-Scan-SR           | PD4        | GPIO3          |
+| SCK_I   | Takt Eingangs-Scan-SR           | PD4        | GPIO0          |
 | RCK_I   | Latch Eingangs-Scan-SR          | PA7        | GPIO18         |
-| IN_H1   | Matrix-Rücklesung 1             | PD2        | GPIO0          |
+| IN_H1   | Matrix-Rücklesung 1             | PD2        | GPIO3          |
 | IN_R1   | Matrix-Rücklesung 2             | PA6        | GPIO1          |
 | IN_H2   | Matrix-Rücklesung 3             | PA3        | GPIO4          |
 | IN_R2   | Matrix-Rücklesung 4             | PA2        | GPIO5          |

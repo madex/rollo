@@ -31,12 +31,15 @@
 #define PIN_SCK_O   GPIO_NUM_19  /* Takt      Ausgangs-SR            - alt: PD0 */
 #define PIN_RCK_O   GPIO_NUM_10  /* Latch     Ausgangs-SR            - alt: PB6 */
 #define PIN_SER_I   GPIO_NUM_9   /* Daten     Eingangs-Scan-SR       - alt: PD3 */
-#define PIN_SCK_I   GPIO_NUM_3   /* Takt      Eingangs-Scan-SR       - alt: PD4 */
+#define PIN_SCK_I   GPIO_NUM_0   /* Takt      Eingangs-Scan-SR       - alt: PD4 */
 #define PIN_RCK_I   GPIO_NUM_18  /* Latch     Eingangs-Scan-SR       - alt: PA7 */
 
 /* Ruecklese-Eingaenge der Tastenmatrix (ESP-Eingaenge)
+ * GPIO3/4/5 sind auf dem GOOUUU-ESP32-C3 die RGB-LED (rot/gruen/blau,
+ * gemeinsame Anode, aktiv low). Als hochohmige EINGAENGE sind sie ok
+ * (LED bleibt dunkel), als Ausgaenge wuerden sie die LED einschalten.
  * Bit-Reihenfolge wie im Original: H1, R1, H2, R2, H3, R3 */
-#define PIN_IN_H1   GPIO_NUM_0   /* alt: PD2 */
+#define PIN_IN_H1   GPIO_NUM_3   /* alt: PD2 */
 #define PIN_IN_R1   GPIO_NUM_1   /* alt: PA6 */
 #define PIN_IN_H2   GPIO_NUM_4   /* alt: PA3 */
 #define PIN_IN_R2   GPIO_NUM_5   /* alt: PA2 */
