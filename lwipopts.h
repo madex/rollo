@@ -63,7 +63,7 @@
 //#define MEM_LIBC_MALLOC                 0
 #define MEM_ALIGNMENT                   4           // default is 1
 #define MEM_SIZE                        (10 * 1024)  // default is 1600
-//#define MEMP_OVERFLOW_CHECK             0
+#define MEMP_OVERFLOW_CHECK             1
 //#define MEMP_SANITY_CHECK               0
 //#define MEM_USE_POOLS                   0
 //#define MEMP_USE_CUSTOM_POOLS           0
@@ -136,7 +136,7 @@
 //
 //*****************************************************************************
 #define LWIP_DHCP                       1           // default is 0
-//#define DHCP_DOES_ARP_CHECK             ((LWIP_DHCP) && (LWIP_ARP))
+#define DHCP_DOES_ARP_CHECK             ((LWIP_DHCP) && (LWIP_ARP))
 
 //*****************************************************************************
 //
@@ -373,7 +373,7 @@
 // ---------- Debugging options ----------
 //
 //*****************************************************************************
-#if 0
+#if 1
 #define U8_F "c"
 #define S8_F "c"
 #define X8_F "x"
@@ -388,8 +388,8 @@ extern void UARTprintf(const char *pcString, ...);
 #endif
 
 //#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_OFF
-#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_OFF
-//#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_WARNING
+//#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_OFF
+#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_WARNING
 //#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_SERIOUS
 //#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_SEVERE
 
