@@ -172,7 +172,7 @@ unsigned short getParameterValue(unsigned char paraIdx,
 
 void printParams(uriParse_t *u) {
 	int i;
-	char help[100], help2[100];
+	char help[200], help2[200];
 	if (!u || !u->uriString)
 		return;
 	for (i = 0; i < u->length; i++) {
@@ -228,7 +228,7 @@ int main() {
 	if (parseUri(broken, strlen(broken), &u))
 		printParams(&u); // 💥 erwartet: Merkwürdiger Output oder Absturz
 	printf("\nmany = %s\n", many);
-	if (parseUri(many, strlen(many), &u))
-		printParams(&u); // 💥 letzter Parameter überschreibt evtl. Speicher
+	if (parseUri(many, strlen(many), &u)) printf("error");
+	printParams(&u); // 💥 letzter Parameter überschreibt evtl. Speicher
     return 0;
 }

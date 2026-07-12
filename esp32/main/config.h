@@ -49,7 +49,7 @@
 #define PIN_IN_R1   GPIO_NUM_1   /* alt: PA6 */
 #define PIN_IN_H2   GPIO_NUM_4   /* alt: PA3 */
 #define PIN_IN_R2   GPIO_NUM_5   /* alt: PA2 */
-#define PIN_IN_H3   GPIO_NUM_0   /* alt: PA5 */
+#define PIN_IN_H3   GPIO_NUM_19  /* alt: PA5 */
 #define PIN_IN_R3   GPIO_NUM_7   /* alt: PA4 */
 
 /* Interne Pull-ups an den Ruecklese-Eingaengen aktivieren (1) oder
