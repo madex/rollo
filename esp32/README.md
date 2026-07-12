@@ -37,7 +37,7 @@ unverändert übernommen. Neu bzw. geändert:
 | IN_R1   | Matrix-Rücklesung 2             | PA6        | GPIO1          |
 | IN_H2   | Matrix-Rücklesung 3             | PA3        | GPIO4          |
 | IN_R2   | Matrix-Rücklesung 4             | PA2        | GPIO5          |
-| IN_H3   | Matrix-Rücklesung 5             | PA5        | GPIO0          |
+| IN_H3   | Matrix-Rücklesung 5             | PA5        | GPIO19         |
 | IN_R3   | Matrix-Rücklesung 6             | PA4        | GPIO7          |
 
 Die Belegung liegt zentral in `main/config.h` und ist leicht änderbar.
@@ -65,10 +65,12 @@ ESP-IDF (≥ v5.1) installieren: https://docs.espressif.com/projects/esp-idf/
 
 ```sh
 cd esp32
+. ~/esp/esp-idf/export.sh  # get idf
 idf.py set-target esp32c3
 idf.py menuconfig        # -> "Rollo Konfiguration": WLAN SSID + Passwort
 idf.py build
-idf.py flash monitor
+idf.py flash monitor.    # flash local
+curl -X POST --data-binary @build/rollo.bin http://rollo/ota # ota update. (use bash, do not run in zsh)
 ```
 
 Im Monitor erscheint nach dem Verbinden die IP-Adresse. Web-UI:
